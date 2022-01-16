@@ -1,6 +1,7 @@
 # PdfiumView
 
-![Release version](https://img.shields.io/badge/release-v0.1.1-yellow.svg)
+[![Release version](https://img.shields.io/github/v/release/makuke1234/PdfiumView?display_name=release&include_prereleases)](https://github.com/makuke1234/PdfiumView/releases/latest)
+[![Total downloads](https://img.shields.io/github/downloads/makuke1234/PdfiumView/total)](https://github.com/makuke1234/PdfiumView/releases)
 ![C++ version](https://img.shields.io/badge/version-C++20-blue.svg)
 
 A small and compact PDF viewer for Windows, written in C++ utilising [PDFium library](https://pdfium.googlesource.com/pdfium/).<br>
