@@ -4,3 +4,4 @@ obj*
 *.zip
 /inspiration
 *.pdf
+.bash*

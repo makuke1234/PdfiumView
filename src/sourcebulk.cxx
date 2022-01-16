@@ -1,0 +1,7 @@
+#include "../src/common.cpp"
+#include "../src/errors.cpp"
+#include "../src/lib.cpp"
+#include "../src/main_window.cpp"
+#include "../src/main.cpp"
+#include "../src/tabs.cpp"
+#include "../src/opendialog.cpp"

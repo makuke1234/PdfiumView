@@ -1,47 +1,72 @@
-CPPC=g++
-MACROS=-D UNICODE -D _UNICODE
-CFlags=-std=c++20 -Wall -Wextra -Wpedantic -I./pdfium/include $(MACROS)
-RelFlags=-O3 -Wl,--strip-all,--build-id=none,--gc-sections -fno-ident -D NDEBUG -mwindows
-DebFlags=-g -D _DEBUG
-Lib=-L./pdfium/x86/lib -lpdfium.dll -lcomctl32 -lgdi32 -lcomdlg32
+export CPLUS_INCLUDE_PATH=./pdfium/include
+export LIBRARY_PATH=./pdfium/x86/lib
 
-BINDIR=bin
-OBJDIR=obj
-TARGETNAME=PdfiumView
+BIN=bin
+OBJ=obj
+SRC=src
+TARGET=PdfiumView
+
+CXX=g++
+MACROS=-D UNICODE -D _UNICODE
+CXXDEFFLAGS=-std=c++20 -Wall -Wextra -Wpedantic -Wconversion $(MACROS) -m32
+RelFlags=-O3 -Wl,--strip-all,--build-id=none,--gc-sections -fno-ident -D NDEBUG -mwindows
+DebFlags=-g -O0 -D _DEBUG
+LIB=-lpdfium.dll -lcomctl32 -lgdi32 -lcomdlg32 -municode
+
+
+SRCFILES=$(wildcard $(SRC)/*.cpp)
+SRCBULKFILES=$(wildcard $(SRC)/*.cxx)
+RSCFILES=$(wildcard $(SRC)/*.rc)
+
+RELOBJFILES=$(SRCFILES:%.cpp=%.cpp.o)
+RELOBJFILES+=$(RSCFILES:%.rc=%.rc.o)
+RELOBJFILES:=$(RELOBJFILES:$(SRC)/%=$(OBJ)/%)
+
+DEBOBJFILES=$(SRCFILES:%.cpp=%.cpp.d.o)
+DEBOBJFILES+=$(RSCFILES:%.rc=%.rc.d.o)
+DEBOBJFILES:=$(DEBOBJFILES:$(SRC)/%=$(OBJ)/%)
+
+
+RELOBJFILESBULK=$(SRCBULKFILES:%.cxx=%.cxx.o)
+RELOBJFILESBULK+=$(RSCFILES:%.rc=%.rc.o)
+RELOBJFILESBULK:=$(RELOBJFILESBULK:$(SRC)/%=$(OBJ)/%)
+
+DEBOBJFILESBULK=$(SRCBULKFILES:%.cxx=%.cxx.d.o)
+DEBOBJFILESBULK+=$(RSCFILES:%.rc=%.rc.d.o)
+DEBOBJFILESBULK:=$(DEBOBJFILESBULK:$(SRC)/%=$(OBJ)/%)
 
 default: release
 
 rel: release
 deb: debug
 
-release: objdir objfiles.r
-debug: objdir objfiles.d
+bulkr: $(RELOBJFILESBULK)
+	$(CXX) $^ -o $(BIN)/$(TARGET).exe $(RelFlags) $(LIB)
+bulkd: $(DEBOBJFILESBULK)
+	$(CXX) $^ -o $(BIN)/deb$(TARGET).exe $(DebFlags) $(LIB)
 
-bulkr: objdir bulkobj.r
-bulkd: objdir bulkobj.d
+release: $(RELOBJFILES)
+	$(CXX) $^ -o $(BIN)/$(TARGET).exe $(RelFlags) $(LIB)
+debug: $(DEBOBJFILES)
+	$(CXX) $^ -o $(BIN)/deb$(TARGET).exe $(DebFlags) $(LIB)
 
-bulkobj.r: sourcebulk.o resource.o
-	$(CPPC) $(addprefix $(OBJDIR)/, $^) -o $(BINDIR)/$(TARGETNAME).exe $(RelFlags) $(Lib)
-bulkobj.d: sourcebulk.d.o resource.d.o
-	$(CPPC) $(addprefix $(OBJDIR)/, $^) -o $(BINDIR)/$(TARGETNAME).d.exe $(DebFlags) $(Lib)
 
-objfiles.r: main.o resource.o main_window.o common.o errors.o lib.o tabs.o opendialog.o
-	$(CPPC) $(addprefix $(OBJDIR)/, $^) -o $(BINDIR)/$(TARGETNAME).exe $(RelFlags) $(Lib)
-objfiles.d: main.d.o resource.d.o main_window.d.o common.d.o errors.d.o lib.d.o tabs.d.o opendialog.d.o
-	$(CPPC) $(addprefix $(OBJDIR)/, $^) -o $(BINDIR)/$(TARGETNAME).d.exe $(DebFlags) $(Lib)
+$(OBJ)/%.rc.o: $(SRC)/%.rc $(OBJ)
+	windres -i $< -o $@ $(MACROS) -D FILE_NAME='\"$(TARGET).exe\"'
+$(OBJ)/%.rc.d.o: $(SRC)/%.rc $(OBJ)
+	windres -i $< -o $@ $(MACROS) -D FILE_NAME='\"deb$(TARGET).exe\"'
 
-resource.o: resource.rc
-	windres -i $^ -o $(OBJDIR)/$@ $(MACROS) -D FILE_NAME='\"$(TARGETNAME).exe\"'
-resource.d.o: resource.rc
-	windres -i $^ -o $(OBJDIR)/$@ $(MACROS) -D FILE_NAME='\"$(TARGETNAME).d.exe\"'
+$(OBJ)/%.o: $(SRC)/% $(OBJ)
+	$(CXX) -c $< -o $@ $(CXXDEFFLAGS) $(RelFlags)
+$(OBJ)/%.d.o: $(SRC)/% $(OBJ)
+	$(CXX) -c $< -o $@ $(CXXDEFFLAGS) $(DebFlags)
 
-%.o: %.cpp
-	$(CPPC) -c $^ -o $(OBJDIR)/$@ $(CFlags) $(RelFlags)
-%.d.o: %.cpp
-	$(CPPC) -c $^ -o $(OBJDIR)/$@ $(CFlags) $(DebFlags)
+$(OBJ):
+	mkdir $(OBJ)
 
-objdir:
-	IF NOT EXIST $(OBJDIR) (mkdir $(OBJDIR))
+$(BIN):
+	mkdir $(BIN)
 
 clean:
-	IF EXIST $(OBJDIR) (rd $(OBJDIR) /s /q)
+	rm -r -f $(OBJ)
+	rm -f $(BIN)/*.exe

@@ -3,7 +3,6 @@
 
 #include <shellapi.h>
 
-#include "mingw-unicode-gui.cpp"
 int WINAPI wWinMain(
 	HINSTANCE hInst,
 	[[maybe_unused]] HINSTANCE hPrevInst,
