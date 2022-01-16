@@ -4,7 +4,7 @@
 ![C++ version](https://img.shields.io/badge/version-C++20-blue.svg)
 
 A small and compact PDF viewer for Windows, written in C++ utilising [PDFium library](https://pdfium.googlesource.com/pdfium/).<br>
-*Binaries for PDFium can be obtained [here](https://github.com/bblanchon/pdfium-binaries)).*
+*Binaries for PDFium can be obtained [here](https://github.com/bblanchon/pdfium-binaries).*
 
 
 # Obtaining
