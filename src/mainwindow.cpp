@@ -438,7 +438,7 @@ void pdfv::MainWindow::openPdfFile(std::wstring_view file) noexcept
 		it = this->m_tabs.insert(fshort);
 	}
 	
-	it->second.pdfLoad(file);
+	it->second.pdfLoad(std::wstring(file));
 	it->updatePDF();
 
 	this->m_tabs.select();

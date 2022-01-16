@@ -61,63 +61,69 @@ void pdfv::Pdfium::free() noexcept
 	s_errorHappened = false;
 	return error::Errorcode(FPDF_GetLastError() + error::pdf_success);
 }
-pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(std::string_view path, std::size_t page) noexcept
+pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(std::string_view path, std::size_t page)
 {
 	assert(s_libInit == true);
 	this->pdfUnload();
+
+	return this->pdfLoad(utf::conv(path), page);
+}
+pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(const std::wstring & path, std::size_t page)
+{
+	assert(s_libInit == true);
+	this->pdfUnload();
+
+	auto file = ::CreateFileW(
+		path.c_str(),
+		GENERIC_READ,
+		FILE_SHARE_READ,
+		nullptr,
+		OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL,
+		nullptr
+	);
+	auto size = ::GetFileSize(file, nullptr);
+	auto buf = new std::uint8_t[size];
+	DWORD read = 0;
+
+	if (::ReadFile(file, buf, size, &read, nullptr))
+	{
+		::CloseHandle(file);
+		return this->pdfLoad(std::move(buf), size, page);
+	}
+
+	return error::pdf_file;
+}
+pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(const u8 * data, std::size_t length, std::size_t page)
+{
+	assert(s_libInit == true);
+	this->pdfUnload();
+
+	auto buf = new u8[length];
+	std::copy(data, data + length, buf);
 	
-	this->m_fdoc = FPDF_LoadDocument(path.data(), nullptr);
-	if (this->m_fdoc == nullptr)
+	return this->pdfLoad(std::move(buf), length, page);
+}
+pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(u8 * && data, std::size_t length, std::size_t page) noexcept
+{
+	assert(s_libInit == true);
+	this->pdfUnload();
+
+	this->m_buf.reset(data);
+	
+	this->m_fdoc = FPDF_LoadMemDocument(this->m_buf.get(), length, nullptr);
+	if (this->m_fdoc == nullptr) [[unlikely]]
 	{
 		s_errorHappened = true;
 		auto err = this->getLastError();
 		if (err == error::pdf_password)
 		{
 			auto ans = utf::conv(askInfo(L"Enter password:", MainWindow::mwnd.getTitle()));
-			this->m_fdoc = FPDF_LoadDocument(path.data(), ans.c_str());
-			if (this->m_fdoc == nullptr)
+			this->m_fdoc = FPDF_LoadMemDocument(this->m_buf.get(), length, ans.c_str());
+			if (this->m_fdoc == nullptr) [[unlikely]]
 			{
 				s_errorHappened = true;
 				return this->getLastError();
-			}
-		}
-		else
-		{
-			return err;
-		}
-	}
-	
-	this->m_numPages = FPDF_GetPageCount(this->m_fdoc);
-	return this->pageLoad(page);
-}
-pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(std::wstring_view path, std::size_t page)
-{
-	assert(s_libInit == true);
-
-	auto nPath = utf::conv(path);
-	return this->pdfLoad(nPath, page);
-}
-pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(const std::vector<std::uint8_t> & data, std::size_t page) noexcept
-{
-	assert(s_libInit == true);
-	this->pdfUnload();
-
-	this->m_buf.reset(new std::uint8_t[data.size()]);
-	std::copy(data.begin(), data.end(), this->m_buf.get());
-	
-	this->m_fdoc = FPDF_LoadMemDocument(this->m_buf.get(), data.size(), nullptr);
-	if (this->m_fdoc == nullptr)
-	{
-		s_errorHappened = true;
-		auto err = getLastError();
-		if (err == error::pdf_password) 
-		{
-			auto ans = utf::conv(askInfo(L"Enter password:", MainWindow::mwnd.getTitle()));
-			this->m_fdoc = FPDF_LoadMemDocument(this->m_buf.get(), data.size(), ans.c_str());
-			if (this->m_fdoc == nullptr)
-			{
-				s_errorHappened = true;
-				return getLastError();
 			}
 		}
 		else

@@ -38,19 +38,23 @@ namespace pdfv
 		//	Also loads a given page, which is first page by default
 		//	Returns an errorcode
 		//
-		error::Errorcode pdfLoad(std::string_view path, std::size_t page = 1) noexcept;
+		error::Errorcode pdfLoad(std::string_view path, std::size_t page = 1);
 		//
 		//	Loads a PDF file from specified path given as an UTF-16 (Unicode) string
 		//	Also loads a given page, which is first page by default
 		//	Returns an errorcode
 		//
-		error::Errorcode pdfLoad(std::wstring_view path, std::size_t page = 1);
+		error::Errorcode pdfLoad(const std::wstring & path, std::size_t page = 1);
 		//
 		//	Loads a PDF file from specified path given as a std::vector of bytes.
 		//	Also loads a given page, which is first page by default
 		//	Returns an errorcode
 		//
-		error::Errorcode pdfLoad(const std::vector<std::uint8_t> & data, std::size_t page = 1) noexcept;
+		error::Errorcode pdfLoad(const u8 * data, std::size_t length, std::size_t page = 1);
+		//
+		//
+		//
+		error::Errorcode pdfLoad(u8 * && data, std::size_t length, std::size_t page = 1) noexcept;
 		//
 		//	Unloads (closes) the currently loaded PDF if opened any
 		//
