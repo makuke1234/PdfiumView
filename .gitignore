@@ -2,6 +2,7 @@
 obj*
 *.exe
 *.zip
+*.tgz
 /inspiration
 *.pdf
 .bash*
