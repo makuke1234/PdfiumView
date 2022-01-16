@@ -27,46 +27,59 @@
 #endif
 
 
-namespace pdfv {
+namespace pdfv
+{
 	// Some type aliases
 	using ssize_t = std::intptr_t;
-	using uchar = unsigned char;
-	using ushort = unsigned short;
-	using uint = unsigned int;
-	using l = long;
-	using ul = unsigned long;
-	using ll = long long;
-	using ull = unsigned long long;
-	using f = float;
-	using d = double;
-	using ld = long double;
+	using uchar   = unsigned char;
+	using ushort  = unsigned short;
+	using uint    = unsigned int;
+	using l       = long;
+	using ul      = unsigned long;
+	using ll      = long long;
+	using ull     = unsigned long long;
+	using f       = float;
+	using d       = double;
+	using ld      = long double;
+
+	using i8  = std::int8_t;
+	using u8  = std::uint8_t;
+	using i16 = std::int16_t;
+	using u16 = std::uint16_t;
+	using i32 = std::int32_t;
+	using u32 = std::uint32_t;
+	using i64 = std::int64_t;
+	using u64 = std::uint64_t;
 	
 	//
 	//	Data structure that represents x and y coordinate pair of a point
 	//	Provides some modern operator overloading
 	//
 	template<class T = int>
-	class xy {
-	public:
+	struct xy
+	{
 		T x{}, y{};
 
 		xy() noexcept = default;
 		constexpr xy(T x_, T y_) noexcept
 			: x(x_), y(y_)
-		{}
-		constexpr xy(xy const& other) noexcept
+		{
+		}
+		constexpr xy(const xy & other) noexcept
 			: x(other.x), y(other.y)
-		{}
-		constexpr xy(xy&& other) noexcept
+		{
+		}
+		constexpr xy(xy && other) noexcept
 			: x(std::move(other.x)), y(std::move(other.y))
-		{}
-		constexpr xy& operator=(xy const& other) noexcept
+		{
+		}
+		constexpr xy & operator=(const xy & other) noexcept
 		{
 			x = other.x;
 			y = other.y;
 			return *this;
 		}
-		constexpr xy& operator=(xy&& other) noexcept
+		constexpr xy & operator=(xy && other) noexcept
 		{
 			x = std::move(other.x);
 			y = std::move(other.y);
@@ -76,32 +89,34 @@ namespace pdfv {
 		//
 		//	Swaps current object with another class object
 		//
-		constexpr void swap(xy& other) noexcept
+		constexpr void swap(xy & other) noexcept
 		{
 			xy temp{ std::move(other) };
 			other = std::move(*this);
 			*this = std::move(temp);
 		}
 
-		//
-		//	Tells if values of value pairs are close enough (both)
-		//	Precision is determined by the constant epsilon (second argument)
-		//
-		[[nodiscard]] constexpr bool isclose(xy const& rhs, const T epsilon) noexcept
+		/**
+		 * @brief Tells if values of value pairs are close enough (both values)
+		 * 
+		 * @param rhs Second value pair
+		 * @param epsilon Precision of closeness
+		 */
+		[[nodiscard]] constexpr bool isclose(const xy & rhs, const T epsilon) noexcept
 		{
 			return (std::abs(x - rhs.x) <= epsilon) && (std::abs(y - rhs.y) <= epsilon);
 		}
 		//
 		//	Tells if value pairs are equal to each other
 		//
-		[[nodiscard]] constexpr bool operator==(xy const& rhs) noexcept
+		[[nodiscard]] constexpr bool operator==(const xy & rhs) noexcept
 		{
 			return (x == rhs.x) && (y == rhs.y);
 		}
 		//
 		//	Tells if value pairs are not equal to each other
 		//
-		[[nodiscard]] constexpr bool operator!=(xy const& rhs) noexcept
+		[[nodiscard]] constexpr bool operator!=(const xy & rhs) noexcept
 		{
 			return (x != rhs.x) || (y != rhs.y);
 		}
@@ -109,7 +124,7 @@ namespace pdfv {
 		//	Tells if both members of current value pair are smaller than
 		//	the members of the other value pair 
 		//
-		[[nodiscard]] constexpr bool operator< (xy const& rhs) noexcept
+		[[nodiscard]] constexpr bool operator< (const xy & rhs) noexcept
 		{
 			return (x < rhs.x) && (y < rhs.y);
 		}
@@ -117,7 +132,7 @@ namespace pdfv {
 		//	Tells if both members of current value pair are smaller than or
 		//	equal to the members of the other value pair 
 		//
-		[[nodiscard]] constexpr bool operator<=(xy const& rhs) noexcept
+		[[nodiscard]] constexpr bool operator<=(const xy & rhs) noexcept
 		{
 			return (x <= rhs.x) && (y <= rhs.y);
 		}
@@ -125,7 +140,7 @@ namespace pdfv {
 		//	Tells if both members of current value pair are larger than
 		//	the members of the other value pair 
 		//
-		[[nodiscard]] constexpr bool operator> (xy const& rhs) noexcept
+		[[nodiscard]] constexpr bool operator> (const xy & rhs) noexcept
 		{
 			return (x > rhs.x) && (y > rhs.y);
 		}
@@ -133,7 +148,7 @@ namespace pdfv {
 		//	Tells if both members of current value pair are larger than or
 		//	equal to the members of the other value pair 
 		//
-		[[nodiscard]] constexpr bool operator>=(xy const& rhs) noexcept
+		[[nodiscard]] constexpr bool operator>=(const xy & rhs) noexcept
 		{
 			return (x >= rhs.x) && (y >= rhs.y);
 		}
@@ -142,7 +157,7 @@ namespace pdfv {
 		//	Adds up both members of value pairs and makes the answer a new
 		//	value pair
 		//
-		[[nodiscard]] constexpr xy operator+ (xy const& rhs) noexcept
+		[[nodiscard]] constexpr xy operator+ (const xy & rhs) noexcept
 		{
 			return { x + rhs.x, y + rhs.y };
 		}
@@ -150,7 +165,7 @@ namespace pdfv {
 		//	Subtracts both members of the other value pair from
 		//	current value pair and makes the answer a new value pair
 		//
-		[[nodiscard]] constexpr xy operator- (xy const& rhs) noexcept
+		[[nodiscard]] constexpr xy operator- (const xy & rhs) noexcept
 		{
 			return { x - rhs.x, y - rhs.y };
 		}
@@ -158,7 +173,7 @@ namespace pdfv {
 		//	Multiplies both members of the other value pair with current
 		//	value pair members and makes the answer a new value pair
 		//
-		[[nodiscard]] constexpr xy operator* (xy const& rhs) noexcept
+		[[nodiscard]] constexpr xy operator* (const xy & rhs) noexcept
 		{
 			return { x * rhs.x, y * rhs.y };
 		}
@@ -166,7 +181,7 @@ namespace pdfv {
 		//	Divides both members of the current value pair with the members
 		//	of the other value pair and makes the answer a new value pair
 		//
-		[[nodiscard]] constexpr xy operator/ (xy const& rhs) noexcept
+		[[nodiscard]] constexpr xy operator/ (const xy & rhs) noexcept
 		{
 			return { x / rhs.x, y / rhs.y };
 		}
@@ -174,7 +189,7 @@ namespace pdfv {
 		//
 		//	Adds both members of the other value pair to the current value pair
 		//
-		constexpr xy& operator+=(xy const& rhs) noexcept
+		constexpr xy & operator+=(const xy & rhs) noexcept
 		{
 			x += rhs.x;
 			y += rhs.y;
@@ -184,7 +199,7 @@ namespace pdfv {
 		//	Subtracts both members of the other value pair from the
 		//	current value pair
 		//
-		constexpr xy& operator-=(xy const& rhs) noexcept
+		constexpr xy & operator-=(const xy & rhs) noexcept
 		{
 			x -= rhs.x;
 			y -= rhs.y;
@@ -194,7 +209,7 @@ namespace pdfv {
 		//	Multiplies the current value pair members
 		//	with the other value pair members
 		//
-		constexpr xy& operator*=(xy const& rhs) noexcept
+		constexpr xy & operator*=(const xy & rhs) noexcept
 		{
 			x *= rhs.x;
 			y *= rhs.y;
@@ -204,7 +219,7 @@ namespace pdfv {
 		//	Divides the other value pair members
 		//	from the current value pair
 		//
-		constexpr xy& operator/=(xy const& rhs) noexcept
+		constexpr xy & operator/=(const xy & rhs) noexcept
 		{
 			x /= rhs.x;
 			y /= rhs.y;
@@ -214,8 +229,7 @@ namespace pdfv {
 		//	Bitshifts the current value pair members to left
 		//	with the members of the other value pair
 		//
-		template<typename = typename std::enable_if<std::is_integral_v<T>>>
-		constexpr xy& operator<<=(xy const& rhs) noexcept
+		constexpr xy & operator<<=(const xy & rhs) noexcept requires std::is_integral_v<T>
 		{
 			x <<= rhs.x;
 			y <<= rhs.y;
@@ -225,8 +239,7 @@ namespace pdfv {
 		//	Bitshift the current value pair members to right
 		//	with the members of the other value pair
 		//
-		template<typename = typename std::enable_if<std::is_integral_v<T>>>
-		constexpr xy& operator>>=(xy const& rhs) noexcept
+		constexpr xy & operator>>=(const xy & rhs) noexcept requires std::is_integral_v<T>
 		{
 			x >>= rhs.x;
 			y >>= rhs.y;
@@ -237,7 +250,7 @@ namespace pdfv {
 		//
 		//	Adds a value to both members of the current value pair
 		//
-		constexpr xy& operator+=(T const& rhs) noexcept
+		constexpr xy & operator+=(const T & rhs) noexcept
 		{
 			x += rhs;
 			y += rhs;
@@ -246,7 +259,7 @@ namespace pdfv {
 		//
 		//	Subtracts a value from both members of the current value pair
 		//
-		constexpr xy& operator-=(T const& rhs) noexcept
+		constexpr xy & operator-=(const T & rhs) noexcept
 		{
 			x -= rhs;
 			y -= rhs;
@@ -255,7 +268,7 @@ namespace pdfv {
 		//
 		//	Multiplies a value with both members of the current value pair
 		//
-		constexpr xy& operator*=(T const& rhs) noexcept
+		constexpr xy & operator*=(const T & rhs) noexcept
 		{
 			x *= rhs;
 			y *= rhs;
@@ -264,7 +277,7 @@ namespace pdfv {
 		//
 		//	Divides a value from both members of the current value pair
 		//
-		constexpr xy& operator/=(T const& rhs) noexcept
+		constexpr xy & operator/=(const T & rhs) noexcept
 		{
 			x /= rhs;
 			y /= rhs;
@@ -274,8 +287,7 @@ namespace pdfv {
 		//	Bitshifts the current value pair members to left
 		//	with the given value
 		//
-		template<typename = typename std::enable_if<std::is_integral_v<T>>>
-		constexpr xy& operator<<=(T const& rhs) noexcept
+		constexpr xy & operator<<=(const T & rhs) noexcept requires std::is_integral_v<T>
 		{
 			x <<= rhs;
 			y <<= rhs;
@@ -285,8 +297,7 @@ namespace pdfv {
 		//	Bitshift the current value pair members to right
 		//	with the given value
 		//
-		template<typename = typename std::enable_if<std::is_integral_v<T>>>
-		constexpr xy& operator>>=(T const& rhs) noexcept
+		constexpr xy & operator>>=(const T & rhs) noexcept requires std::is_integral_v<T>
 		{
 			x >>= rhs;
 			y >>= rhs;
@@ -294,25 +305,25 @@ namespace pdfv {
 		}
 	};
 	
-	extern xy<float> dpi;
+	extern xy<f> dpi;
 	
 	//
 	//	Calculates correct screen coordinate according to a given coordinate
 	//	and a given scaling factor
 	//
-	[[nodiscard]] constexpr int DPI(const int size, const float dip) noexcept
+	[[nodiscard]] constexpr int dip(const int size, const f dip) noexcept
 	{
-		return int(float(size) * dip);
+		return int(f(size) * dip);
 	}
 	//
 	//	Calcluates correct screen coordinate pair according
 	//	to a value pair and a scaling factor pair
 	//
-	[[nodiscard]] constexpr xy<int> DPI(const xy<int> size, const xy<float> dip) noexcept
+	[[nodiscard]] constexpr xy<int> dip(const xy<int> size, const xy<f> dip) noexcept
 	{
 		return {
-			int(float(size.x) * dip.x),
-			int(float(size.y) * dip.y)
+			int(f(size.x) * dip.x),
+			int(f(size.y) * dip.y)
 		};
 	}
 
@@ -321,20 +332,23 @@ namespace pdfv {
 	//	WNDCLASSEXW data struct if any.
 	//	The return value shall not be ignored.
 	//
-	[[nodiscard]] ATOM RegisterClasses(WNDCLASSEXW& wcex) noexcept;
+	[[nodiscard]] ATOM registerClasses(WNDCLASSEXW & wcex) noexcept;
 	//
 	//	Asks user info with a given message and window title in a
 	//	dialog-box-like window
 	//	Information from the user is returned as std::wstring
 	//
-	[[nodiscard]] std::wstring AskInfo(std::wstring_view message, std::wstring_view title) noexcept;
+	[[nodiscard]] std::wstring askInfo(std::wstring_view message, std::wstring_view title) noexcept;
 
-	//
-	//	Converts UTF-8 string to UTF-16 (Unicode) string
-	//
-	[[nodiscard]] std::wstring Convert(std::string_view input);
-	//
-	//	Converts UTF-16 (Unicode) string to UTF-8 string
-	//
-	[[nodiscard]] std::string Convert(std::wstring_view input);
+	namespace utf
+	{
+		//
+		//	Converts UTF-8 string to UTF-16 (Unicode) string
+		//
+		[[nodiscard]] std::wstring conv(std::string_view str);
+		//
+		//	Converts UTF-16 (Unicode) string to UTF-8 string
+		//
+		[[nodiscard]] std::string conv(std::wstring_view wstr);
+	}
 }

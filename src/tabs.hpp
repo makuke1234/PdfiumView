@@ -6,37 +6,37 @@
 #include <utility>
 #include <set>
 
-namespace pdfv {
-	
-	// Declare before use in friending
-	class tabs;
-	class main_window;
+namespace pdfv
+{
+	// Declare before use in be-friending
+	class Tabs;
+	class MainWindow;
 
-	class tabobject {
+	class TabObject
+	{
 	public:
 		std::wstring first;
-		pdfv::lib second;
-		HWND closeButton{};
+		pdfv::Pdfium second;
+		HWND closeButton{ nullptr };
 
-		tabobject() noexcept = delete;
-		tabobject(HWND tabshwnd, HINSTANCE hinst) noexcept;
-		tabobject(HWND tabshwnd, HINSTANCE hInst, std::wstring const& V1, pdfv::lib&& V2 = pdfv::lib());
-		tabobject(HWND tabshwnd, HINSTANCE hInst, std::wstring_view V1, pdfv::lib&& V2 = pdfv::lib());
-		tabobject(HWND tabshwnd, HINSTANCE hInst, std::wstring&& V1, pdfv::lib&& V2 = pdfv::lib()) noexcept;
-		tabobject(tabobject const& other) = delete;
-		tabobject(tabobject&& other) noexcept;
-		tabobject& operator=(tabobject const& other) = delete;
-		tabobject& operator=(tabobject&& other) noexcept;
-		~tabobject() noexcept;
+		TabObject() noexcept = delete;
+		TabObject(HWND tabshwnd, HINSTANCE hinst) noexcept;
+		TabObject(HWND tabshwnd, HINSTANCE hInst, std::wstring_view V1, pdfv::Pdfium && V2 = pdfv::Pdfium());
+		TabObject(HWND tabshwnd, HINSTANCE hInst, std::wstring && V1, pdfv::Pdfium && V2 = pdfv::Pdfium()) noexcept;
+		TabObject(const TabObject & other) = delete;
+		TabObject(TabObject && other) noexcept;
+		TabObject & operator=(const TabObject & other) = delete;
+		TabObject & operator=(TabObject && other) noexcept;
+		~TabObject() noexcept;
 		
 		//
 		//	Inserts handle to the tab and sets its parent to the tab if needed
 		//
-		void Insert(HWND handle);
+		void insert(HWND handle);
 		//
 		//	Inserts and constructs in-place an element to the tab
 		//
-		HWND const& Insert(
+		const HWND & insert(
 			DWORD dwExStyle,
 			std::wstring_view className,
 			std::wstring_view windowName,
@@ -50,31 +50,31 @@ namespace pdfv {
 		//	Removes specified handle from the tab and destroys it
 		//	Sets the given handle to nullptr
 		//
-		void Remove(HWND& handle) noexcept;
+		void remove(HWND & handle) noexcept;
 		//
 		//	Shows the tab window
 		//
-		void Show() const noexcept;
+		void show() const noexcept;
 		//
 		//	Hides the tab window
 		//
-		void Hide() const noexcept;
+		void hide() const noexcept;
 		//
 		//	Informs the WndProc of the tab to update it's scrollbars
 		//
-		void UpdatePDF() const noexcept;
+		void updatePDF() const noexcept;
 
 	private:
 		// Private variables
 		HWND tabhandle{};
 		std::set<HWND> handles;
 
-		friend class pdfv::tabs;
-		friend class pdfv::main_window;
+		friend class pdfv::Tabs;
+		friend class pdfv::MainWindow;
 
 		friend int WINAPI ::wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int);
-		static LRESULT CALLBACK TabProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp) noexcept;
-		static LRESULT CALLBACK CloseButtonProc(
+		static LRESULT CALLBACK tabProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp) noexcept;
+		static LRESULT CALLBACK closeButtonProc(
 			HWND hwnd,
 			UINT uMsg,
 			WPARAM wp,
@@ -84,7 +84,8 @@ namespace pdfv {
 		) noexcept;
 	};
 
-	class tabs {
+	class Tabs
+	{
 	public:
 		static inline const ssize_t endpos{ -1 };
 		static inline const std::wstring padding{ L"      " };
@@ -92,107 +93,107 @@ namespace pdfv {
 		static inline const std::wstring defaulttitlepadded{ defaulttitle + padding };
 
 	private:
-		HWND m_parent{};
-		HWND m_tabshwnd{};
+		HWND m_parent{ nullptr };
+		HWND m_tabshwnd{ nullptr };
 		xy<int> m_pos;
 		xy<int> m_size;
 		xy<int> m_offset;
 
-		using listtype = std::vector<pdfv::tabobject>;
+		using listtype = std::vector<pdfv::TabObject>;
 
 		listtype m_tabs;
 		ssize_t m_tabindex{};
 
-		friend class pdfv::main_window;
+		friend class pdfv::MainWindow;
 
 		//
 		//	Creates the close button for the tab with appropriate size
 		//
-		[[nodiscard]] HWND CreateCloseButton(RECT rect, HMENU menu) const noexcept;
+		[[nodiscard]] HWND createCloseButton(RECT rect, HMENU menu) const noexcept;
 
 		static inline const xy<int> s_cCloseButtonSz{ 20, 20 };
 
 	public:
-		tabs() noexcept;
+		Tabs() noexcept;
 		//
 		//	Initializes a tab by using parent's HWND and HINSTANCE
 		//
-		tabs(HWND hwnd, HINSTANCE hInst) noexcept;
-		tabs(tabs const& other) = delete;
-		tabs(tabs&& other) noexcept;
-		tabs& operator=(tabs const& other) = delete;
-		tabs& operator=(tabs&& other) noexcept;
-		~tabs() noexcept;
+		Tabs(HWND hwnd, HINSTANCE hInst) noexcept;
+		Tabs(const Tabs & other) = delete;
+		Tabs(Tabs && other) noexcept;
+		Tabs & operator=(const Tabs & other) = delete;
+		Tabs & operator=(Tabs && other) noexcept;
+		~Tabs() noexcept;
 
 		//
 		//	Returns const reference to the tabs' handle
 		//
-		[[nodiscard]] constexpr HWND const& GetHandle() const noexcept
+		[[nodiscard]] constexpr const HWND & getHandle() const noexcept
 		{
-			return m_tabshwnd;
+			return this->m_tabshwnd;
 		}
 
 		//
 		//	Resizes the whole tab control
 		//
-		void Resize(xy<int> newsize) noexcept;
+		void resize(xy<int> newsize) noexcept;
 		//
 		//	Moves the tab control to a new position
 		//
-		void Move(xy<int> newpos) noexcept;
+		void move(xy<int> newpos) noexcept;
 		//
 		//	Redraws the tab control
 		//
-		void Repaint() const noexcept;
+		void repaint() const noexcept;
 		//
 		//	Moves the close buttons to the appropriate position of the tab
 		//
-		void MoveCloseButtons() const noexcept;
+		void moveCloseButtons() const noexcept;
 		//
 		//	Moves the close button at the specified index to the appropriate
 		//	position of the tab
 		//	If index is tabs::endpos, moves the last tab's close button
 		//
-		void MoveCloseButton(pdfv::ssize_t index) const noexcept;
+		void moveCloseButton(pdfv::ssize_t index) const noexcept;
 		//
 		//	Updates close buttons on screen
 		//
-		void UpdateCloseButtons() const noexcept;
+		void updateCloseButtons() const noexcept;
 		//
 		//	Inserts a new tab at a given index to the tab control
 		//	Default index is tabs::endpos
 		//
-		listtype::iterator Insert(std::wstring_view title, const ssize_t index = tabs::endpos);
+		listtype::iterator insert(std::wstring_view title, const ssize_t index = Tabs::endpos);
 		//
 		//	Removes a tab with the specified name
 		//
-		void Remove(std::wstring_view title) noexcept;
+		void remove(std::wstring_view title) noexcept;
 		//
 		//	Removes a tab at the specified index
 		//	Default index is tabs::endpos
 		//
-		void Remove(const ssize_t index = tabs::endpos) noexcept;
+		void remove(const ssize_t index = Tabs::endpos) noexcept;
 		//
 		//	Renames a tab at the specified index
 		//	Default index is tabs::endpos
 		//
-		listtype::iterator Rename(std::wstring_view title, const ssize_t index = tabs::endpos);
+		listtype::iterator rename(std::wstring_view title, const ssize_t index = Tabs::endpos);
 		//
 		//	Returns tab's name at the specified index
 		//
-		[[nodiscard]] std::wstring_view GetName(const ssize_t index = tabs::endpos) const noexcept;
+		[[nodiscard]] std::wstring_view getName(const ssize_t index = Tabs::endpos) const noexcept;
 		//
 		//	Selects a tab at the specified index
 		//	Default index is tabs::endpos
 		//
-		void Select(const ssize_t index = tabs::endpos) noexcept;
+		void select(const ssize_t index = Tabs::endpos) noexcept;
 		//
 		//	Returns the number of tabs currently present
 		//
-		[[nodiscard]] std::size_t Size() const noexcept;
+		[[nodiscard]] std::size_t size() const noexcept;
 		//
 		//	Handles the tab control active tab changes
 		//
-		void SelChange() noexcept;
+		void selChange() noexcept;
 	};
 }

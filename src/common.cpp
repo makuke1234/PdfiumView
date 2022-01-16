@@ -1,45 +1,63 @@
 #include "common.hpp"
-#include "main_window.hpp"
+#include "mainwindow.hpp"
 
 template class pdfv::xy<int>;
 template class pdfv::xy<float>;
 
 pdfv::xy<float> pdfv::dpi{ 1.0f, 1.0f };
 
-[[nodiscard]] ATOM pdfv::RegisterClasses(WNDCLASSEXW& wcex) noexcept
+[[nodiscard]] ATOM pdfv::registerClasses(WNDCLASSEXW & wcex) noexcept
 {
 	if (wcex.cbSize == 0)
+	{
 		wcex.cbSize = sizeof(WNDCLASSEXW);
+	}
 	if (wcex.style == 0)
+	{
 		wcex.style = CS_HREDRAW | CS_VREDRAW;
+	}
 	if (wcex.hbrBackground == nullptr)
+	{
 		wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW);
+	}
 	if (wcex.hCursor == nullptr)
+	{
 		wcex.hCursor = ::LoadCursorW(nullptr, IDC_ARROW);
+	}
 	if (wcex.hIcon == nullptr)
+	{
 		wcex.hIcon = ::LoadIconW(nullptr, IDI_APPLICATION);
+	}
 	if (wcex.hIconSm == nullptr)
+	{
 		wcex.hIconSm = wcex.hIcon;
+	}
 	if (wcex.lpszClassName == nullptr)
+	{
 		wcex.lpszClassName = APP_CLASSNAME;
+	}
 
 	return ::RegisterClassExW(&wcex);
 }
 
-namespace pdfv {
+namespace pdfv
+{
 	static constexpr UINT WM_MESSAGE = WM_USER + 1;
 	static bool AskProc_finished = false;
 
-	LRESULT CALLBACK AskProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept
+	LRESULT CALLBACK askProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept
 	{
-		static wchar_t *textdata{};
+		static wchar_t * textdata{};
 		static HWND textbox{}, messagebox{};
 		
-		switch (uMsg) {
+		switch (uMsg)
+		{
 		case WM_COMMAND:
-			switch (wp) {
+			switch (wp)
+			{
 			case IDOK:
-				if (textdata != nullptr && textbox != nullptr) {
+				if (textdata != nullptr && textbox != nullptr)
+				{
 					::GetWindowTextW(textbox, textdata, 2048);
 				}
 				[[fallthrough]];
@@ -60,10 +78,10 @@ namespace pdfv {
 				L"button",
 				L"&OK",
 				WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON | WS_TABSTOP,
-				DPI(153, dpi.x),
-				DPI(100, dpi.y),
-				DPI(80 , dpi.x),
-				DPI(24 , dpi.y),
+				dip(153, dpi.x),
+				dip(100, dpi.y),
+				dip(80 , dpi.x),
+				dip(24 , dpi.y),
 				hwnd,
 				reinterpret_cast<HMENU>(IDOK),
 				nullptr,
@@ -74,10 +92,10 @@ namespace pdfv {
 				L"button",
 				L"&Cancel",
 				WS_CHILD | WS_VISIBLE | WS_TABSTOP,
-				DPI(240, dpi.y),
-				DPI(100, dpi.y),
-				DPI(80 , dpi.x),
-				DPI(24 , dpi.x),
+				dip(240, dpi.y),
+				dip(100, dpi.y),
+				dip(80 , dpi.x),
+				dip(24 , dpi.x),
 				hwnd,
 				reinterpret_cast<HMENU>(IDCANCEL),
 				nullptr,
@@ -88,10 +106,10 @@ namespace pdfv {
 				L"static",
 				L"",
 				WS_CHILD | WS_VISIBLE,
-				DPI(10 , dpi.x),
-				DPI(10 , dpi.y),
-				DPI(310, dpi.x),
-				DPI(50 , dpi.y),
+				dip(10 , dpi.x),
+				dip(10 , dpi.y),
+				dip(310, dpi.x),
+				dip(50 , dpi.y),
 				hwnd,
 				nullptr,
 				nullptr,
@@ -102,16 +120,16 @@ namespace pdfv {
 				L"edit",
 				L"",
 				WS_CHILD | WS_VISIBLE | WS_TABSTOP,
-				DPI(10 , dpi.x),
-				DPI(65 , dpi.y),
-				DPI(310, dpi.x),
-				DPI(22 , dpi.y),
+				dip(10 , dpi.x),
+				dip(65 , dpi.y),
+				dip(310, dpi.x),
+				dip(22 , dpi.y),
 				hwnd,
 				nullptr,
 				nullptr,
 				nullptr
 			);
-			auto font = reinterpret_cast<WPARAM>(main_window::mwnd.GetDefaultFont());
+			auto font = reinterpret_cast<WPARAM>(MainWindow::mwnd.getDefaultFont());
 			::SendMessageW(button1   , WM_SETFONT, font, true);
 			::SendMessageW(button2   , WM_SETFONT, font, true);
 			::SendMessageW(messagebox, WM_SETFONT, font, true);
@@ -132,35 +150,35 @@ namespace pdfv {
 				true
 			);
 
-			textdata = reinterpret_cast<wchar_t*>(reinterpret_cast<CREATESTRUCTW*>(lp)->lpCreateParams);
+			textdata = static_cast<wchar_t *>(reinterpret_cast<CREATESTRUCTW *>(lp)->lpCreateParams);
 			break;
 		}
 		case pdfv::WM_MESSAGE:
-			::SetWindowTextW(messagebox, reinterpret_cast<wchar_t*>(lp));
+			::SetWindowTextW(messagebox, reinterpret_cast<wchar_t *>(lp));
 			break;
 		default:
 			return ::DefWindowProcW(hwnd, uMsg, wp, lp);
 		}
+
 		return 0;
 	}
 }
 
-[[nodiscard]] std::wstring pdfv::AskInfo(std::wstring_view message, std::wstring_view title) noexcept
+[[nodiscard]] std::wstring pdfv::askInfo(std::wstring_view message, std::wstring_view title) noexcept
 {
-	WNDCLASSEXW wc{ main_window::mwnd.GetWindowClass() };
-	wc.lpfnWndProc   = &pdfv::AskProc;
+	WNDCLASSEXW wc{ MainWindow::mwnd.getWindowClass() };
+	wc.lpfnWndProc   = &pdfv::askProc;
 	wc.lpszClassName = L"AskInfoClass";
 	wc.lpszMenuName  = nullptr;
 
-	if (!RegisterClasses(wc)) {
+	if (!registerClasses(wc))
+	{
 		return {};
 	}
-	main_window::mwnd.Enable(false);
+	MainWindow::mwnd.enable(false);
 	AskProc_finished = false;
-	wchar_t temp[2048];
-	temp[0] = 0;
-	// Good practise
-	temp[2047] = 0;
+
+	wchar_t temp[2048] = { 0 };
 	auto hwnd = ::CreateWindowExW(
 		0,
 		wc.lpszClassName,
@@ -168,15 +186,16 @@ namespace pdfv {
 		WS_POPUPWINDOW | WS_CAPTION,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
-		DPI(330, dpi.x),
-		DPI(142, dpi.y),
-		main_window::mwnd.GetHWND(),
+		dip(330, dpi.x),
+		dip(142, dpi.y),
+		MainWindow::mwnd.getHwnd(),
 		nullptr,
 		nullptr,
 		reinterpret_cast<LPVOID>(temp)
 	);
-	if (hwnd == nullptr) {
-		main_window::mwnd.Enable();
+	if (hwnd == nullptr)
+	{
+		MainWindow::mwnd.enable();
 		::UnregisterClassW(wc.lpszClassName, wc.hInstance);
 		return {};
 	}
@@ -186,9 +205,12 @@ namespace pdfv {
 	::UpdateWindow(hwnd);
 
 	MSG msg{};
-	while (!AskProc_finished) {
-		if (::GetMessageW(&msg, nullptr, 0, 0)) {
-			if (!::IsDialogMessageW(hwnd, &msg)) {
+	while (!AskProc_finished)
+	{
+		if (::GetMessageW(&msg, nullptr, 0, 0))
+		{
+			if (!::IsDialogMessageW(hwnd, &msg))
+			{
 				::TranslateMessage(&msg);
 				::DispatchMessageW(&msg);
 			}
@@ -196,40 +218,62 @@ namespace pdfv {
 	}
 	::DestroyWindow(hwnd);
 
-	main_window::mwnd.Enable();
+	MainWindow::mwnd.enable();
 	::UnregisterClassW(wc.lpszClassName, wc.hInstance);
 	return temp;
 }
 
-[[nodiscard]] std::wstring pdfv::Convert(std::string_view input)
+[[nodiscard]] std::wstring pdfv::utf::conv(std::string_view str)
 {
-	std::unique_ptr<wchar_t> temp(new wchar_t[input.length() + 1]);
+	auto len = ::MultiByteToWideChar(
+		CP_UTF8,
+		MB_PRECOMPOSED,
+		str.data(),
+		int(str.size()) + 1,
+		nullptr,
+		0
+	);
+
+	std::wstring wstr;
+	wstr.reserve(len);
+
 	::MultiByteToWideChar(
 		CP_UTF8,
-		MB_COMPOSITE,
-		input.data(),
-		input.length(),
-		temp.get(),
-		input.length()
+		MB_PRECOMPOSED,
+		str.data(),
+		int(str.size()) + 1,
+		wstr.data(),
+		len
 	);
-	temp.get()[input.length()] = 0;
 
-	return temp.get();
+	return wstr;
 }
-[[nodiscard]] std::string pdfv::Convert(std::wstring_view input)
+[[nodiscard]] std::string pdfv::utf::conv(std::wstring_view wstr)
 {
-	std::unique_ptr<char> temp(new char[input.length() + 1]);
-	::WideCharToMultiByte(
+	auto len = ::WideCharToMultiByte(
 		CP_UTF8,
 		0,
-		input.data(),
-		input.length(),
-		temp.get(),
-		input.length(),
+		wstr.data(),
+		int(wstr.size()) + 1,
+		nullptr,
+		0,
 		nullptr,
 		nullptr
 	);
-	temp.get()[input.length()] = 0;
 
-	return temp.get();
+	std::string str;
+	str.reserve(len);
+
+	::WideCharToMultiByte(
+		CP_UTF8,
+		0,
+		wstr.data(),
+		int(wstr.size()) + 1,
+		str.data(),
+		len,
+		nullptr,
+		nullptr
+	);
+
+	return str;
 }

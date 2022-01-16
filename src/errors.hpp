@@ -1,9 +1,12 @@
 #pragma once
 #include "common.hpp"
 
-namespace pdfv {
-	namespace error {
-		enum errorcode : std::uint32_t {
+namespace pdfv
+{
+	namespace error
+	{
+		enum Errorcode : std::uint32_t
+		{
 			success,
 			noerror = success,
 			error,
@@ -34,11 +37,11 @@ namespace pdfv {
 		//	Makes handle (passed as second parameter)
 		//	the owner of the Message Box
 		//
-		void Report(errorcode errid, HWND hwnd) noexcept;
+		void report(Errorcode errid, HWND hwnd) noexcept;
 		//
 		//	Displays error messages based on error id
 		//	Message Box owner is the main window
 		//
-		void Report(errorcode errid) noexcept;
+		void report(Errorcode errid) noexcept;
 	}
 }

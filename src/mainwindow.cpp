@@ -1,14 +1,14 @@
-#include "main_window.hpp"
+#include "mainwindow.hpp"
 
 #include <vector>
 
-pdfv::main_window pdfv::main_window::mwnd;
+pdfv::MainWindow pdfv::MainWindow::mwnd;
 
-void pdfv::main_window::AboutBox() noexcept
+void pdfv::MainWindow::aboutBox() noexcept
 {
-	mwnd.Enable(false);
+	mwnd.enable(false);
 	bool finished{ false };
-	auto sz{ DPI({ s_cAboutBoxSizeX, s_cAboutBoxSizeY }, dpi) };
+	auto sz{ dip({ s_cAboutBoxSizeX, s_cAboutBoxSizeY }, dpi) };
 
 	auto hwnd = ::CreateWindowExW(
 		0,
@@ -24,14 +24,18 @@ void pdfv::main_window::AboutBox() noexcept
 		nullptr,
 		&finished
 	);
-	if (hwnd != nullptr) {
+	if (hwnd != nullptr)
+	{
 		MSG msg{};
 		::ShowWindow(hwnd, SW_SHOW);
 		::UpdateWindow(hwnd);
 
-		while (!finished) {
-			if (::GetMessageW(&msg, nullptr, 0, 0)) {
-				if (!::IsDialogMessageW(hwnd, &msg)) {
+		while (!finished)
+		{
+			if (::GetMessageW(&msg, nullptr, 0, 0))
+			{
+				if (!::IsDialogMessageW(hwnd, &msg))
+				{
 					::TranslateMessage(&msg);
 					::DispatchMessageW(&msg);
 				}
@@ -39,21 +43,21 @@ void pdfv::main_window::AboutBox() noexcept
 		}
 		::DestroyWindow(hwnd);
 	}
-	mwnd.Enable();
+	mwnd.enable();
 	::BringWindowToTop(mwnd.m_hwnd);
 }
 
-pdfv::main_window::main_window() noexcept
+pdfv::MainWindow::MainWindow() noexcept
 {
 	auto screen = ::GetDC(nullptr);
 	dpi = {
-		::GetDeviceCaps(screen, LOGPIXELSX) / 96.0f,
-		::GetDeviceCaps(screen, LOGPIXELSY) / 96.0f
+		f(::GetDeviceCaps(screen, LOGPIXELSX)) / 96.0f,
+		f(::GetDeviceCaps(screen, LOGPIXELSY)) / 96.0f
 	};
-	m_menuSize = ::GetSystemMetrics(SM_CYMENU);
-	m_usableArea = DPI({ APP_DEFSIZE_X, APP_DEFSIZE_Y }, dpi);
-	m_defaultFont = ::CreateFontW(
-		DPI(15, dpi.y),
+	this->m_menuSize = ::GetSystemMetrics(SM_CYMENU);
+	this->m_usableArea = dip({ APP_DEFSIZE_X, APP_DEFSIZE_Y }, dpi);
+	this->m_defaultFont = ::CreateFontW(
+		dip(15, dpi.y),
 		0,
 		0,
 		0, 
@@ -70,33 +74,34 @@ pdfv::main_window::main_window() noexcept
 	);
 }
 
-pdfv::main_window::~main_window() noexcept
+pdfv::MainWindow::~MainWindow() noexcept
 {
-	::DeleteObject(m_defaultFont);
+	::DeleteObject(this->m_defaultFont);
 }
 
-void pdfv::main_window::Enable(bool enable) const noexcept
+void pdfv::MainWindow::enable(bool enable) const noexcept
 {
-	::EnableWindow(m_hwnd, enable);
+	::EnableWindow(this->m_hwnd, enable);
 }
-void pdfv::main_window::SetTitle(std::wstring_view newTitle)
+void pdfv::MainWindow::setTitle(std::wstring_view newTitle)
 {
-	m_title = newTitle;
-	::SetWindowTextW(m_hwnd, m_title.c_str());
-}
-
-int pdfv::main_window::Message(std::wstring_view message, std::wstring_view msgtitle, UINT type) const noexcept
-{
-	return ::MessageBoxW(m_hwnd, message.data(), msgtitle.data(), type);
-}
-int pdfv::main_window::Message(std::wstring_view message, UINT type) const noexcept
-{
-	return ::MessageBoxW(m_hwnd, message.data(), m_title.c_str(), type);
+	this->m_title = newTitle;
+	::SetWindowTextW(this->m_hwnd, this->m_title.c_str());
 }
 
-LRESULT CALLBACK pdfv::main_window::WindowProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept
+int pdfv::MainWindow::message(std::wstring_view message, std::wstring_view msgtitle, UINT type) const noexcept
 {
-	switch (uMsg) {
+	return ::MessageBoxW(this->m_hwnd, message.data(), msgtitle.data(), type);
+}
+int pdfv::MainWindow::message(std::wstring_view message, UINT type) const noexcept
+{
+	return ::MessageBoxW(this->m_hwnd, message.data(), this->m_title.c_str(), type);
+}
+
+LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept
+{
+	switch (uMsg)
+	{
 	case WM_PAINT:
 	{
 		PAINTSTRUCT ps{};
@@ -106,29 +111,35 @@ LRESULT CALLBACK pdfv::main_window::WindowProc(const HWND hwnd, const UINT uMsg,
 		break;
 	}
 	case WM_COMMAND:
-		switch (LOWORD(wp)) {
+		switch (LOWORD(wp))
+		{
 		case IDM_FILE_OPEN:
 		{
 			std::wstring file;
-			if (mwnd.m_openDialog.Open(hwnd, file)) {
+			if (mwnd.m_openDialog.open(hwnd, file)) {
 				// Open the PDF
-				mwnd.OpenPdfFile(file);
+				mwnd.openPdfFile(file);
 			}
 			break;
 		}
 		case IDM_FILE_CLOSETAB:
 			// Close current tab
-			if (mwnd.m_tabs.Size() > 1) {
-				mwnd.m_tabs.Remove(mwnd.m_tabs.m_tabindex);
-				mwnd.m_tabs.Select();
+			if (mwnd.m_tabs.size() > 1)
+			{
+				mwnd.m_tabs.remove(mwnd.m_tabs.m_tabindex);
+				mwnd.m_tabs.select();
 			}
-			else {
-				if (mwnd.m_tabs.GetName() == tabs::defaulttitlepadded)
+			else
+			{
+				if (mwnd.m_tabs.getName() == Tabs::defaulttitlepadded)
+				{
 					::DestroyWindow(hwnd);
-				else {
-					auto it = mwnd.m_tabs.Rename(tabs::defaulttitle);
-					it->second.PdfUnload();
-					it->UpdatePDF();
+				}
+				else
+				{
+					auto it = mwnd.m_tabs.rename(Tabs::defaulttitle);
+					it->second.pdfUnload();
+					it->updatePDF();
 				}
 			}
 			break;
@@ -137,27 +148,35 @@ LRESULT CALLBACK pdfv::main_window::WindowProc(const HWND hwnd, const UINT uMsg,
 			break;
 		case IDM_HELP_ABOUT:
 			if (mwnd.m_helpAvailable)
-				AboutBox();
+			{
+				aboutBox();
+			}
 			break;
 		default:
-			if (wp >= IDM_LIMIT && wp < (IDM_LIMIT + mwnd.m_tabs.Size())) {
+			if (wp >= IDM_LIMIT && wp < (IDM_LIMIT + mwnd.m_tabs.size()))
+			{
 				auto const comp = int(wp) - IDM_LIMIT;
-				if (mwnd.m_tabs.Size() > 1) {
-					mwnd.m_tabs.Remove(comp);
+				if (mwnd.m_tabs.size() > 1)
+				{
+					mwnd.m_tabs.remove(comp);
 					if ((comp < mwnd.m_tabs.m_tabindex) ||
-						(mwnd.m_tabs.m_tabindex == int(mwnd.m_tabs.Size())))
+						(mwnd.m_tabs.m_tabindex == int(mwnd.m_tabs.size())))
 					{
 						--mwnd.m_tabs.m_tabindex;
 					}
-					mwnd.m_tabs.Select(mwnd.m_tabs.m_tabindex);
+					mwnd.m_tabs.select(mwnd.m_tabs.m_tabindex);
 				}
-				else {
-					if (mwnd.m_tabs.GetName() == tabs::defaulttitlepadded)
+				else
+				{
+					if (mwnd.m_tabs.getName() == Tabs::defaulttitlepadded)
+					{
 						::DestroyWindow(hwnd);
-					else {
-						auto it = mwnd.m_tabs.Rename(tabs::defaulttitle);
-						it->second.PdfUnload();
-						it->UpdatePDF();
+					}
+					else
+					{
+						auto it = mwnd.m_tabs.rename(Tabs::defaulttitle);
+						it->second.pdfUnload();
+						it->updatePDF();
 					}
 				}
 			}
@@ -166,7 +185,8 @@ LRESULT CALLBACK pdfv::main_window::WindowProc(const HWND hwnd, const UINT uMsg,
 	case WM_KEYDOWN:
 	{
 		auto target{ mwnd.m_tabs.m_tabs[mwnd.m_tabs.m_tabindex].tabhandle };
-		switch (wp) {
+		switch (wp)
+		{
 		case VK_HOME:
 			::SendMessageW(target, WM_VSCROLL, MAKELONG(SB_TOP, 0), 0);
 			break;
@@ -187,7 +207,8 @@ LRESULT CALLBACK pdfv::main_window::WindowProc(const HWND hwnd, const UINT uMsg,
 		static int delta = 0;
 		delta += int(GET_WHEEL_DELTA_WPARAM(wp));
 
-		if (std::abs(delta) >= WHEEL_DELTA) {
+		if (std::abs(delta) >= WHEEL_DELTA)
+		{
 			POINT p;
 			::GetCursorPos(&p);
 			auto pt1{ xy<int>{ p.x, p.y } - mwnd.m_pos };
@@ -211,9 +232,10 @@ LRESULT CALLBACK pdfv::main_window::WindowProc(const HWND hwnd, const UINT uMsg,
 		break;
 	}
 	case WM_NOTIFY:
-		switch (reinterpret_cast<LPNMHDR>(lp)->code) {
+		switch (reinterpret_cast<LPNMHDR>(lp)->code)
+		{
 		case TCN_SELCHANGE:
-			mwnd.m_tabs.SelChange();
+			mwnd.m_tabs.selChange();
 			break;
 		}
 		break;
@@ -223,8 +245,10 @@ LRESULT CALLBACK pdfv::main_window::WindowProc(const HWND hwnd, const UINT uMsg,
 	case WM_SIZING:
 	{
 		auto r = reinterpret_cast<RECT*>(lp);
-		if ((r->right - r->left) < mwnd.m_minArea.x) {
-			switch (wp) {
+		if ((r->right - r->left) < mwnd.m_minArea.x)
+		{
+			switch (wp)
+			{
 			case WMSZ_BOTTOMRIGHT:
 			case WMSZ_RIGHT:
 			case WMSZ_TOPRIGHT:
@@ -234,10 +258,13 @@ LRESULT CALLBACK pdfv::main_window::WindowProc(const HWND hwnd, const UINT uMsg,
 			case WMSZ_LEFT:
 			case WMSZ_TOPLEFT:
 				r->left = r->right - mwnd.m_minArea.x;
+				break;
 			}
 		}
-		if ((r->bottom - r->top) < mwnd.m_minArea.y) {
-			switch (wp) {
+		if ((r->bottom - r->top) < mwnd.m_minArea.y)
+		{
+			switch (wp)
+			{
 			case WMSZ_BOTTOM:
 			case WMSZ_BOTTOMLEFT:
 			case WMSZ_BOTTOMRIGHT:
@@ -262,7 +289,7 @@ LRESULT CALLBACK pdfv::main_window::WindowProc(const HWND hwnd, const UINT uMsg,
 		mwnd.m_border = mwnd.m_totalArea - mwnd.m_usableArea;
 		mwnd.m_border.y -= mwnd.m_menuSize;
 
-		mwnd.m_tabs.Resize(mwnd.m_usableArea);
+		mwnd.m_tabs.resize(mwnd.m_usableArea);
 		break;
 	case WM_CLOSE:
 		::DestroyWindow(hwnd);
@@ -298,7 +325,7 @@ LRESULT CALLBACK pdfv::main_window::WindowProc(const HWND hwnd, const UINT uMsg,
 			mwnd.m_title.assign(temp, len);
 		}
 
-		mwnd.m_tabs = tabs(hwnd, mwnd.GetHINST());
+		mwnd.m_tabs = Tabs(hwnd, mwnd.getHinst());
 		::SendMessageW(
 			mwnd.m_tabs.m_tabshwnd,
 			WM_SETFONT,
@@ -306,35 +333,39 @@ LRESULT CALLBACK pdfv::main_window::WindowProc(const HWND hwnd, const UINT uMsg,
 			false
 		);
 
-		mwnd.m_tabs.Insert(tabs::defaulttitle);
+		mwnd.m_tabs.insert(Tabs::defaulttitle);
 
 		// Open PDF if any
 		{
-			const wchar_t* fname{
-				reinterpret_cast<wchar_t*>(
-					reinterpret_cast<CREATESTRUCTW*>(lp)->lpCreateParams
-				)
+			const wchar_t * fname{
+				static_cast<wchar_t *>(reinterpret_cast<CREATESTRUCTW *>(lp)->lpCreateParams)
 			};
-			if (fname != nullptr) {
+			if (fname != nullptr && fname[0] != '\0')
+			{
 				// Open pdf
 				std::wstring_view fnv(fname);
-				mwnd.OpenPdfFile(fnv);
-				mwnd.m_openDialog.UpdateName(fnv);
+				mwnd.openPdfFile(fnv);
+				mwnd.m_openDialog.updateName(fnv);
 			}
 		}
 		break;
 	case WM_COPYDATA:
 	{
-		const auto receive = reinterpret_cast<COPYDATASTRUCT*>(lp);
-		if (receive->dwData) {
+		auto receive = reinterpret_cast<const COPYDATASTRUCT *>(lp);
+		if (receive != nullptr && receive->dwData > 0)
+		{
 			// Open pdf
-			std::wstring_view fnv(reinterpret_cast<wchar_t*>(receive->lpData));
-			mwnd.OpenPdfFile(fnv);
-			mwnd.m_openDialog.UpdateName(fnv);
+			std::wstring_view fnv(static_cast<wchar_t *>(receive->lpData));
+			if (fnv.length() == 0)
+			{
+				break;
+			}
+			mwnd.openPdfFile(fnv);
+			mwnd.m_openDialog.updateName(fnv);
 		}
 		break;
 	}
-	case pdfv::main_window::WM_BRINGTOFRONT:
+	case pdfv::MainWindow::WM_BRINGTOFRONT:
 	{
 		::ShowWindow(hwnd, SW_RESTORE);
 		HWND curWnd = ::GetForegroundWindow();
@@ -353,16 +384,19 @@ LRESULT CALLBACK pdfv::main_window::WindowProc(const HWND hwnd, const UINT uMsg,
 	default:
 		return ::DefWindowProcW(hwnd, uMsg, wp, lp);
 	}
+
 	return 0;
 }
 
-LRESULT CALLBACK pdfv::main_window::AboutProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp) noexcept
+LRESULT CALLBACK pdfv::MainWindow::aboutProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp) noexcept
 {
-	static bool* finished{};
+	static bool * finished{};
 
-	switch (uMsg) {
+	switch (uMsg)
+	{
 	case WM_COMMAND:
-		switch (wp) {
+		switch (wp)
+		{
 		case IDOK:
 		case IDCANCEL:
 			::DestroyWindow(hwnd);
@@ -375,9 +409,7 @@ LRESULT CALLBACK pdfv::main_window::AboutProc(HWND hwnd, UINT uMsg, WPARAM wp, L
 		*finished = true;
 		break;
 	case WM_CREATE:
-		finished = reinterpret_cast<bool*>(
-			reinterpret_cast<CREATESTRUCTW*>(lp)->lpCreateParams
-		);
+		finished = reinterpret_cast<bool*>(reinterpret_cast<CREATESTRUCTW*>(lp)->lpCreateParams);
 		break;
 	default:
 		return ::DefWindowProcW(hwnd, uMsg, wp, lp);
@@ -385,22 +417,29 @@ LRESULT CALLBACK pdfv::main_window::AboutProc(HWND hwnd, UINT uMsg, WPARAM wp, L
 	return 0;
 }
 
-void pdfv::main_window::OpenPdfFile(std::wstring_view file) noexcept {
+void pdfv::MainWindow::openPdfFile(std::wstring_view file) noexcept
+{
 	std::wstring_view fshort;
-	for (std::size_t i = file.length() - 1; i > 0; --i) {
-		if (file[i] == L'\\') {
+	for (std::size_t i = file.length() - 1; i > 0; --i)
+	{
+		if (file[i] == L'\\')
+		{
 			fshort = file.substr(i + 1);
 			break;
 		}
 	}
-	std::vector<pdfv::tabobject>::iterator it;
-	if (m_tabs.Size() == 1 && m_tabs.GetName() == tabs::defaulttitlepadded)
-		it = m_tabs.Rename(fshort);
+	std::vector<pdfv::TabObject>::iterator it;
+	if (this->m_tabs.size() == 1 && this->m_tabs.getName() == Tabs::defaulttitlepadded)
+	{
+		it = this->m_tabs.rename(fshort);
+	}
 	else
-		it = m_tabs.Insert(fshort);
+	{
+		it = this->m_tabs.insert(fshort);
+	}
+	
+	it->second.pdfLoad(file);
+	it->updatePDF();
 
-	it->second.PdfLoad(file);
-	it->UpdatePDF();
-
-	m_tabs.Select();
+	this->m_tabs.select();
 }

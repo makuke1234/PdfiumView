@@ -1,7 +1,8 @@
 #include "errors.hpp"
-#include "main_window.hpp"
+#include "mainwindow.hpp"
 
-const wchar_t* pdfv::error::errMsgs[pdfv::error::max_error] {
+const wchar_t * pdfv::error::errMsgs[pdfv::error::max_error]
+{
 	L"No error.",
 	L"Program reported an error.",
 	L"Error registering application class!",
@@ -19,19 +20,20 @@ const wchar_t* pdfv::error::errMsgs[pdfv::error::max_error] {
 	L"Selected page in the PDF could not be opened!"
 };
 
-void pdfv::error::Report(pdfv::error::errorcode errid, HWND hwnd) noexcept
+void pdfv::error::report(pdfv::error::Errorcode errid, HWND hwnd) noexcept
 {
-	static const wchar_t *emptyTitle = L"";
+	static const wchar_t * emptyTitle = L"";
 
 	assert((errid >= success) && (errid < max_error));
-	wchar_t *temp = const_cast<wchar_t*>(emptyTitle), tempabstract[2048];
-	if (hwnd != nullptr) {
+	wchar_t *temp = const_cast<wchar_t *>(emptyTitle), tempabstract[2048];
+	if (hwnd != nullptr)
+	{
 		::GetWindowTextW(hwnd, tempabstract, 2048);
 		temp = tempabstract;
 	}
 	::MessageBoxW(hwnd, errMsgs[errid], temp, MB_ICONERROR | MB_OK);
 }
-void pdfv::error::Report(pdfv::error::errorcode errid) noexcept
+void pdfv::error::report(pdfv::error::Errorcode errid) noexcept
 {
-	pdfv::error::Report(errid, main_window::mwnd.GetHWND());
+	pdfv::error::report(errid, MainWindow::mwnd.getHwnd());
 }

@@ -1,39 +1,41 @@
 #include "lib.hpp"
-#include "main_window.hpp"
+#include "mainwindow.hpp"
 #include <iostream>
 
-pdfv::lib::lib() noexcept
+pdfv::Pdfium::Pdfium() noexcept
 {
 	if (s_libInit == false)
-		Init();
+	{
+		this->init();
+	}
 }
-pdfv::lib::lib(lib&& other) noexcept
+pdfv::Pdfium::Pdfium(Pdfium && other) noexcept
 	: m_fdoc(other.m_fdoc), m_fpage(other.m_fpage),
 	m_fpagenum(other.m_fpagenum), m_numPages(other.m_numPages),
 	m_buf(std::move(other.m_buf))
 {
-	other.m_fdoc = nullptr;
+	other.m_fdoc  = nullptr;
 	other.m_fpage = nullptr;
 }
-pdfv::lib& pdfv::lib::operator=(lib&& other) noexcept
+pdfv::Pdfium & pdfv::Pdfium::operator=(Pdfium && other) noexcept
 {
-	m_fdoc = other.m_fdoc;
-	m_fpage = other.m_fpage;
-	m_fpagenum = other.m_fpagenum;
-	m_numPages = other.m_numPages;
-	m_buf = std::move(other.m_buf);
+	this->m_fdoc     = other.m_fdoc;
+	this->m_fpage    = other.m_fpage;
+	this->m_fpagenum = other.m_fpagenum;
+	this->m_numPages = other.m_numPages;
+	this->m_buf      = std::move(other.m_buf);
 
-	other.m_fdoc = nullptr;
+	other.m_fdoc  = nullptr;
 	other.m_fpage = nullptr;
 
 	return *this;
 }
-pdfv::lib::~lib() noexcept
+pdfv::Pdfium::~Pdfium() noexcept
 {
-	PdfUnload();
+	this->pdfUnload();
 }
 
-void pdfv::lib::Init() noexcept
+void pdfv::Pdfium::init() noexcept
 {
 	assert(s_libInit == false);
 	
@@ -43,7 +45,7 @@ void pdfv::lib::Init() noexcept
 	FPDF_InitLibraryWithConfig(&config);
 	s_libInit = true;
 }
-void pdfv::lib::Destroy() noexcept
+void pdfv::Pdfium::free() noexcept
 {
 	assert(s_libInit == true);
 
@@ -51,157 +53,136 @@ void pdfv::lib::Destroy() noexcept
 	s_libInit = false;
 }
 
-[[nodiscard]] pdfv::error::errorcode pdfv::lib::GetLastError() noexcept
+[[nodiscard]] pdfv::error::Errorcode pdfv::Pdfium::getLastError() noexcept
 {
 	assert(s_libInit == true);
 	assert(s_errorHappened == true);
 
 	s_errorHappened = false;
-	return error::errorcode(FPDF_GetLastError() + error::pdf_success);
+	return error::Errorcode(FPDF_GetLastError() + error::pdf_success);
 }
-pdfv::error::errorcode pdfv::lib::PdfLoad(std::string_view path, std::size_t page) noexcept
+pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(std::string_view path, std::size_t page) noexcept
 {
 	assert(s_libInit == true);
-	PdfUnload();
+	this->pdfUnload();
 	
-	m_fdoc = FPDF_LoadDocument(path.data(), nullptr);
-	if (m_fdoc == nullptr) {
+	this->m_fdoc = FPDF_LoadDocument(path.data(), nullptr);
+	if (this->m_fdoc == nullptr)
+	{
 		s_errorHappened = true;
-		auto err = GetLastError();
-		if (err == error::pdf_password) {
-			auto ans = Convert(AskInfo(L"Enter password:", main_window::mwnd.GetTitle()));
-			m_fdoc = FPDF_LoadDocument(path.data(), ans.c_str());
-			if (m_fdoc == nullptr) {
+		auto err = this->getLastError();
+		if (err == error::pdf_password)
+		{
+			auto ans = utf::conv(askInfo(L"Enter password:", MainWindow::mwnd.getTitle()));
+			this->m_fdoc = FPDF_LoadDocument(path.data(), ans.c_str());
+			if (this->m_fdoc == nullptr)
+			{
 				s_errorHappened = true;
-				return GetLastError();
+				return this->getLastError();
 			}
 		}
 		else
+		{
 			return err;
-	}
-	
-	m_numPages = FPDF_GetPageCount(m_fdoc);
-	return PageLoad(page);
-}
-pdfv::error::errorcode pdfv::lib::PdfLoad(std::wstring_view path, std::size_t page)
-{
-	assert(s_libInit == true);
-	PdfUnload();
-
-	auto file = ::CreateFileW(
-		path.data(),
-		GENERIC_READ,
-		FILE_SHARE_READ,
-		nullptr,
-		OPEN_EXISTING,
-		FILE_ATTRIBUTE_NORMAL,
-		nullptr
-	);
-	auto size = ::GetFileSize(file, nullptr);
-	m_buf.reset(new std::uint8_t[size]);
-	DWORD read = 0;
-
-	if (::ReadFile(file, m_buf.get(), size, &read, nullptr)) {
-		::CloseHandle(file);
-
-		m_fdoc = FPDF_LoadMemDocument(m_buf.get(), size, nullptr);
-		if (m_fdoc == nullptr) {
-			s_errorHappened = true;
-			auto err = GetLastError();
-			if (err == error::pdf_password) {
-				auto ans = Convert(AskInfo(L"Enter password:", main_window::mwnd.GetTitle()));
-				m_fdoc = FPDF_LoadMemDocument(m_buf.get(), size, ans.c_str());
-				if (m_fdoc == nullptr) {
-					s_errorHappened = true;
-					return GetLastError();
-				}
-			}
-			else
-				return err;
 		}
-
-		m_numPages = FPDF_GetPageCount(m_fdoc);
-		return PageLoad(page);
 	}
-
-	return error::pdf_file;
+	
+	this->m_numPages = FPDF_GetPageCount(this->m_fdoc);
+	return this->pageLoad(page);
 }
-pdfv::error::errorcode pdfv::lib::PdfLoad(std::vector<std::uint8_t> const& data, std::size_t page) noexcept
+pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(std::wstring_view path, std::size_t page)
 {
 	assert(s_libInit == true);
-	PdfUnload();
 
-	m_buf.reset(new std::uint8_t[data.size()]);
-	std::copy(data.begin(), data.end(), m_buf.get());
+	auto nPath = utf::conv(path);
+	return this->pdfLoad(nPath, page);
+}
+pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(const std::vector<std::uint8_t> & data, std::size_t page) noexcept
+{
+	assert(s_libInit == true);
+	this->pdfUnload();
+
+	this->m_buf.reset(new std::uint8_t[data.size()]);
+	std::copy(data.begin(), data.end(), this->m_buf.get());
 	
-	m_fdoc = FPDF_LoadMemDocument(m_buf.get(), data.size(), nullptr);
-	if (m_fdoc == nullptr) {
+	this->m_fdoc = FPDF_LoadMemDocument(this->m_buf.get(), data.size(), nullptr);
+	if (this->m_fdoc == nullptr)
+	{
 		s_errorHappened = true;
-		auto err = GetLastError();
-		if (err == error::pdf_password) {
-			auto ans = Convert(AskInfo(L"Enter password:", main_window::mwnd.GetTitle()));
-			m_fdoc = FPDF_LoadMemDocument(m_buf.get(), data.size(), ans.c_str());
-			if (m_fdoc == nullptr) {
+		auto err = getLastError();
+		if (err == error::pdf_password) 
+		{
+			auto ans = utf::conv(askInfo(L"Enter password:", MainWindow::mwnd.getTitle()));
+			this->m_fdoc = FPDF_LoadMemDocument(this->m_buf.get(), data.size(), ans.c_str());
+			if (this->m_fdoc == nullptr)
+			{
 				s_errorHappened = true;
-				return GetLastError();
+				return getLastError();
 			}
 		}
 		else
+		{
 			return err;
+		}
 	}
 	
-	m_numPages = FPDF_GetPageCount(m_fdoc);
-	return PageLoad(page);
+	this->m_numPages = FPDF_GetPageCount(this->m_fdoc);
+	return this->pageLoad(page);
 }
 
-void pdfv::lib::PdfUnload() noexcept
+void pdfv::Pdfium::pdfUnload() noexcept
 {
 	assert(s_libInit == true);
 
-	PageUnload();
-	if (m_fdoc != nullptr) {
-		FPDF_CloseDocument(m_fdoc);
-		m_fdoc = nullptr;
-		m_numPages = 0;
+	this->pageUnload();
+	if (this->m_fdoc != nullptr)
+	{
+		FPDF_CloseDocument(this->m_fdoc);
+		this->m_fdoc     = nullptr;
+		this->m_numPages = 0;
 	}
 }
 
-pdfv::error::errorcode pdfv::lib::PageLoad(std::size_t page) noexcept
+pdfv::error::Errorcode pdfv::Pdfium::pageLoad(std::size_t page) noexcept
 {
 	assert(s_libInit == true);
 	assert(page >= 1);
-	assert(page <= m_numPages);
-	assert(m_fdoc != nullptr);
+	assert(page <= this->m_numPages);
+	assert(this->m_fdoc != nullptr);
 	
-	if (page != m_fpagenum) {
-		PageUnload();
-		m_fpage = FPDF_LoadPage(m_fdoc, page - 1);
-		if (m_fpage == nullptr) {
+	if (page != this->m_fpagenum)
+	{
+		this->pageUnload();
+		this->m_fpage = FPDF_LoadPage(this->m_fdoc, page - 1);
+		if (this->m_fpage == nullptr)
+		{
 			s_errorHappened = true;
-			return GetLastError();
+			return this->getLastError();
 		}
-		m_fpagenum = page;
+		this->m_fpagenum = page;
 	}
 
 	return error::pdf_success;
 }
-void pdfv::lib::PageUnload() noexcept
+void pdfv::Pdfium::pageUnload() noexcept
 {
 	assert(s_libInit == true);
 
-	if (m_fpage != nullptr) {
-		FPDF_ClosePage(m_fpage);
-		m_fpage = nullptr;
-		m_fpagenum = 0;
+	if (this->m_fpage != nullptr)
+	{
+		FPDF_ClosePage(this->m_fpage);
+		this->m_fpage    = nullptr;
+		this->m_fpagenum = 0;
 	}
 }
 
-pdfv::error::errorcode pdfv::lib::RenderPage(HDC deviceContext, pdfv::xy<int> pos, pdfv::xy<int> size) const noexcept
+pdfv::error::Errorcode pdfv::Pdfium::pageRender(HDC dc, pdfv::xy<int> pos, pdfv::xy<int> size) const noexcept
 {
 	assert(s_libInit == true);
 
-	if (m_fpage != nullptr) {
-		double heightfactor = FPDF_GetPageHeight(m_fpage) / FPDF_GetPageWidth(m_fpage);
+	if (this->m_fpage != nullptr)
+	{
+		double heightfactor = FPDF_GetPageHeight(this->m_fpage) / FPDF_GetPageWidth(this->m_fpage);
 		
 		pdfv::xy<int> newsize;
 		int temp1 = size.y - 2 * pos.y;
@@ -209,13 +190,15 @@ pdfv::error::errorcode pdfv::lib::RenderPage(HDC deviceContext, pdfv::xy<int> po
 		newsize.y = std::min(temp1, temp2);
 		newsize.x = int(double(newsize.y) / heightfactor);
 
-		pos = size - newsize;
+		pos  = size - newsize;
 		pos /= 2;
 
-		FPDF_RenderPage(deviceContext, m_fpage, pos.x, pos.y, newsize.x, newsize.y, 0, 0);
+		FPDF_RenderPage(dc, this->m_fpage, pos.x, pos.y, newsize.x, newsize.y, 0, 0);
 
 		return error::noerror;
 	}
 	else
+	{
 		return error::pdf_page;
+	}
 }
