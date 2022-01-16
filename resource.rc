@@ -1,0 +1,71 @@
+#include "resource.hpp"
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <winver.h>
+
+#include "version.hpp"
+
+/*
+ *	Icon made by Dimitry Miroliubov (https://www.flaticon.com/authors/dimitry-miroliubov)
+ *	from http://www.flaticon.com/
+ */
+IDI_APPLICATION ICON "appicon.ico"
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "Application.manifest"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION    VERSION_SEQUENCE
+PRODUCTVERSION VERSION_SEQUENCE
+FILEFLAGSMASK  VS_FFI_FILEFLAGSMASK
+#ifdef _DEBUG
+FILEFLAGS      VS_FF_DEBUG | VS_FF_PRERELASE
+#else
+FILEFLAGS      0
+#endif
+FILEOS         VOS_NT_WINDOWS32
+FILETYPE       VFT_APP
+FILESUBTYPE    VFT2_UNKNOWN
+BEGIN
+	BLOCK "StringFileInfo"
+	BEGIN
+		BLOCK "040904b0"
+		BEGIN
+			VALUE "CompanyName", "Maku Maku"
+			VALUE "FileDescription", PRODUCT_NAME
+			VALUE "FileVersion", VERSION_SEQUENCE_STR
+			VALUE "InternalName", "Win32App"
+			VALUE "LegalCopyright", "\xA92021 Maku Maku"
+			VALUE "OriginalFilename", FILE_NAME
+			VALUE "ProductName", PRODUCT_NAME
+			VALUE "ProductVersion", VERSION_SEQUENCE_STR
+		END
+	END
+	BLOCK "VarFileInfo"
+	BEGIN
+		VALUE "Translation", 0x0409, 1200
+	END
+END
+
+
+IDR_MAINMENU MENU
+BEGIN
+	POPUP "&File"
+	BEGIN
+		MENUITEM "&Open\tCtrl+O", IDM_FILE_OPEN
+		MENUITEM "&Close tab\tCtrl+W", IDM_FILE_CLOSETAB
+		MENUITEM SEPARATOR
+		MENUITEM "&Exit\tCtrl+Q", IDM_FILE_EXIT
+	END
+	POPUP "&Help"
+	BEGIN
+		MENUITEM "&About " PRODUCT_NAME "\tF1", IDM_HELP_ABOUT
+	END 
+END
+
+IDR_ACCELERATOR1 ACCELERATORS
+BEGIN
+	"O", IDM_FILE_OPEN, CONTROL, VIRTKEY
+	"W", IDM_FILE_CLOSETAB, CONTROL, VIRTKEY
+	"Q", IDM_FILE_EXIT, CONTROL, VIRTKEY
+	VK_F1, IDM_HELP_ABOUT, VIRTKEY
+END
