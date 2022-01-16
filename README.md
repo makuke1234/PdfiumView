@@ -15,7 +15,7 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 # Changelog
 
 * 0.2.0 (planned)
-	* [x] Refactor codebase
+	* Refactor codebase
 	* [ ] Fix most bugs (hopefully)
 	* [ ] More optimised rendering
 	* [ ] Upgrade PDFium version
