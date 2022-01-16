@@ -1,6 +1,6 @@
 # PdfiumView
 
-![Release version](https://img.shields.io/badge/release-v0.1.0-yellow.svg)
+![Release version](https://img.shields.io/badge/release-v0.1.1-yellow.svg)
 ![C++ version](https://img.shields.io/badge/version-C++20-blue.svg)
 
 A small and compact PDF viewer for Windows, written in C++ utilising [PDFium library](https://pdfium.googlesource.com/pdfium/).<br>
@@ -16,10 +16,9 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 
 * 0.2.0 (planned)
 	* Refactor codebase
-	* [ ] Make window procedures more humane
+	* Upgrade PDFium version
 	* [ ] Fix most bugs (hopefully)
 	* [ ] More optimised rendering
-	* [ ] Upgrade PDFium version
 
 * 0.1.0
 	* Initial release
