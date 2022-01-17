@@ -284,6 +284,14 @@ LRESULT CALLBACK pdfv::TabObject::closeButtonProc(
 {
 	switch (uMsg)
 	{
+	case WM_DRAWITEM:
+	{
+		auto pDIS = reinterpret_cast<DRAWITEMSTRUCT *>(lp);
+
+		FillRect(pDIS->hDC, &pDIS->rcItem, static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));
+
+		return TRUE;
+	}
 	case WM_LBUTTONUP:
 	{
 		// Checks if mouse is in the right position
@@ -361,7 +369,7 @@ pdfv::Tabs::~Tabs() noexcept
 
 [[nodiscard]] HWND pdfv::Tabs::createCloseButton(RECT sz, HMENU menu) const noexcept
 {
-	auto ret = ::CreateWindowExW(
+	auto btn = ::CreateWindowExW(
 		0,
 		L"button",
 		L"X",
@@ -375,14 +383,19 @@ pdfv::Tabs::~Tabs() noexcept
 		pdfv::MainWindow::mwnd.getHinst(),
 		nullptr
 	);
+	if (btn == nullptr) [[unlikely]]
+	{
+		return nullptr;
+	}
+
 	::SendMessageW(
-		ret,
+		btn,
 		WM_SETFONT,
 		reinterpret_cast<WPARAM>(pdfv::MainWindow::mwnd.getDefaultFont()),
 		true
 	);
-	::SetWindowSubclass(ret, &pdfv::TabObject::closeButtonProc, 1, 0);
-	return ret;
+	::SetWindowSubclass(btn, &pdfv::TabObject::closeButtonProc, 1, 0);
+	return btn;
 }
 
 void pdfv::Tabs::resize(xy<int> newsize) noexcept
@@ -394,7 +407,7 @@ void pdfv::Tabs::resize(xy<int> newsize) noexcept
 			this->m_tabs[this->m_tabindex].tabhandle,
 			this->m_offset.x, this->m_offset.y,
 			this->m_size.x - this->m_offset.x, this->m_size.y - this->m_offset.y,
-			true
+			TRUE
 		);
 	}
 
@@ -602,8 +615,10 @@ void pdfv::Tabs::select(const ssize_t index) noexcept
 }
 void pdfv::Tabs::selChange() noexcept
 {
-	this->m_tabs[this->m_tabindex].hide();
+	auto oldidx = this->m_tabindex;
 	this->m_tabindex = TabCtrl_GetCurSel(this->m_tabshwnd);
+	
+	this->m_tabs[oldidx].hide();
 	this->resize(this->m_size);
 	this->m_tabs[this->m_tabindex].show();
 }

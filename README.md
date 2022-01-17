@@ -18,6 +18,7 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 * 0.2.0 (planned)
 	* Refactor codebase
 	* Upgrade PDFium version
+	* Tabulating using Ctrl+Tab & Ctrl+Shift+Tab
 	* [ ] Fix most bugs (hopefully)
 	* [ ] More optimised rendering
 

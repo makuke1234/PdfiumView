@@ -152,6 +152,26 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 				aboutBox();
 			}
 			break;
+		case IDC_TABULATE:
+		{
+			ssize_t idx = mwnd.m_tabs.m_tabindex + 1;
+			if (idx == ssize_t(mwnd.m_tabs.size()))
+			{
+				idx = 0;
+			}
+			mwnd.m_tabs.select(idx);
+			break;
+		}	
+		case IDC_TABULATEBACK:
+		{
+			ssize_t idx = mwnd.m_tabs.m_tabindex - 1;
+			if (idx == -1)
+			{
+				idx = mwnd.m_tabs.size() - 1;
+			}
+			mwnd.m_tabs.select(idx);
+			break;
+		}
 		default:
 			if (wp >= IDM_LIMIT && wp < (IDM_LIMIT + mwnd.m_tabs.size()))
 			{
@@ -212,7 +232,7 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 			POINT p;
 			::GetCursorPos(&p);
 			auto pt1{ xy<int>{ p.x, p.y } - mwnd.m_pos };
-			auto pt2{ mwnd.m_tabs.m_pos + mwnd.m_tabs.m_offset };
+			auto pt2{ mwnd.m_tabs.m_pos  + mwnd.m_tabs.m_offset };
 			auto sz { mwnd.m_tabs.m_size - mwnd.m_tabs.m_offset };
 
 			short dir = delta > 0 ? SB_LINEUP : SB_LINEDOWN;
@@ -232,8 +252,16 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 		break;
 	}
 	case WM_NOTIFY:
-		switch (reinterpret_cast<LPNMHDR>(lp)->code)
+		switch (reinterpret_cast<NMHDR *>(lp)->code)
 		{
+		case TCN_KEYDOWN:
+		{
+			auto kd = reinterpret_cast<NMTCKEYDOWN *>(lp);
+			::SendMessageW(hwnd, WM_KEYDOWN, kd->wVKey, kd->flags);
+			break;
+		}
+		case TCN_SELCHANGING:
+			return FALSE;
 		case TCN_SELCHANGE:
 			mwnd.m_tabs.selChange();
 			break;

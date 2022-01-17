@@ -10,6 +10,9 @@
 
 #define IDM_LIMIT 121
 
+#define IDC_TABULATE 122
+#define IDC_TABULATEBACK 123
+
 
 #define IDR_ACCELERATOR1 200
 
