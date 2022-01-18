@@ -16,7 +16,7 @@ namespace pdfv
 	{
 	public:
 		std::wstring first;
-		pdfv::Pdfium second;
+		std::unique_ptr<pdfv::Pdfium> second{ new pdfv::Pdfium() };
 		HWND closeButton{ nullptr };
 
 		TabObject() noexcept = delete;
@@ -66,14 +66,14 @@ namespace pdfv
 
 	private:
 		// Private variables
-		HWND tabhandle{};
+		HWND tabhandle{ nullptr };
 		std::set<HWND> handles;
 
 		friend class pdfv::Tabs;
 		friend class pdfv::MainWindow;
 
 		friend int WINAPI ::wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int);
-		static LRESULT CALLBACK tabProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp) noexcept;
+		static LRESULT CALLBACK tabProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp);
 		static LRESULT CALLBACK closeButtonProc(
 			HWND hwnd,
 			UINT uMsg,

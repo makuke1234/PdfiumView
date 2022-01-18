@@ -11,13 +11,19 @@ namespace pdfv
 	{
 	private:
 		MainWindow() noexcept;
+
+		int m_argc{};
+		wchar_t ** m_argv{ nullptr };
+		HINSTANCE m_hInst{ nullptr };
+		HACCEL m_hAccelerators{ nullptr };
+
 		xy<int> m_usableArea;
 		xy<int> m_totalArea;
 		xy<int> m_minArea;
 		xy<int> m_pos;
 		xy<int> m_border;
 		int m_menuSize{};
-		HWND m_hwnd{};
+		HWND m_hwnd{ nullptr };
 		WNDCLASSEXW m_wcex{};
 		std::wstring m_title;
 		HFONT m_defaultFont{ nullptr };
@@ -42,6 +48,10 @@ namespace pdfv
 		MainWindow & operator=(const MainWindow & other) = delete;
 		MainWindow & operator=(MainWindow && other) noexcept = delete;
 		~MainWindow() noexcept;
+
+		[[nodiscard]] bool init(HINSTANCE hinst, int argc, wchar_t ** argv) noexcept;
+		[[nodiscard]] bool run(const wchar_t * fname, int nCmdShow) noexcept;
+		int msgLoop() const noexcept;
 
 		//
 		//	Enables/disables main window (unblocks/block input)
@@ -83,12 +93,12 @@ namespace pdfv
 		//	A wrapper function to display messages with this window as the
 		//	"owner" of the Message Box
 		//
-		int message(std::wstring_view message, std::wstring_view msgtitle, UINT type = MB_OK) const noexcept;
+		int message(LPCWSTR message, LPCWSTR msgtitle, UINT type = MB_OK) const noexcept;
 		//
 		//	A wrapper function to display messages with this window as the
 		//	"owner" of the Message Box
 		//
-		int message(std::wstring_view message = L"", UINT type = MB_OK) const noexcept;
+		int message(LPCWSTR message = L"", UINT type = MB_OK) const noexcept;
 		
 	private:
 		static inline constexpr UINT WM_LLMOUSEHOOK = WM_USER + 1;

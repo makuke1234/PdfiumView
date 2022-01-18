@@ -1,6 +1,43 @@
 #include "common.hpp"
 #include "mainwindow.hpp"
 
+#include <shellapi.h>
+
+
+std::function<void(wchar_t **)> pdfv::getArgsFree = [](wchar_t ** argVec) noexcept
+{
+	::LocalFree(argVec);
+};
+
+[[nodiscard]] std::unique_ptr<wchar_t *, decltype(pdfv::getArgsFree)> pdfv::getArgs(LPWSTR cmdLine, int & argc) noexcept
+{
+	wchar_t ** argv = ::CommandLineToArgvW(cmdLine, &argc);
+	if (argv == nullptr)
+	{
+		argc = 0;
+	}
+
+	return { argv, pdfv::getArgsFree };
+}
+
+[[nodiscard]] bool pdfv::initCC() noexcept
+{
+	INITCOMMONCONTROLSEX iccex{};
+	iccex.dwSize = sizeof iccex;
+	iccex.dwICC  = ICC_WIN95_CLASSES;
+
+	if (!::InitCommonControlsEx(&iccex)) [[unlikely]]
+	{
+		error::lastErr = error::commoncontrols;
+		return false;
+	}
+	else [[likely]]
+	{
+		return true;
+	}
+}
+
+
 template class pdfv::xy<int>;
 template class pdfv::xy<float>;
 

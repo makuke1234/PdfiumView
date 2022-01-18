@@ -10,6 +10,7 @@
 #include <string>
 #include <string_view>
 #include <memory>
+#include <functional>
 
 #include "errors.hpp"
 #include "version.hpp"
@@ -26,6 +27,13 @@
 #define PTRPRINT "0x%04X"
 #endif
 
+
+#ifdef _DEBUG
+	#include <cstdio>
+	#define DEBUGPRINT(...) std::printf(##__VA_ARGS__)
+#else
+	#define DEBUGPRINT(...)
+#endif
 
 namespace pdfv
 {
@@ -50,7 +58,12 @@ namespace pdfv
 	using u32 = std::uint32_t;
 	using i64 = std::int64_t;
 	using u64 = std::uint64_t;
+
+	extern std::function<void(wchar_t **)> getArgsFree;
+	[[nodiscard]] std::unique_ptr<wchar_t *, decltype(pdfv::getArgsFree)> getArgs(LPWSTR cmdLine, int & argc) noexcept;
 	
+	[[nodiscard]] bool initCC() noexcept;
+
 	//
 	//	Data structure that represents x and y coordinate pair of a point
 	//	Provides some modern operator overloading

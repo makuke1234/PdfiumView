@@ -54,6 +54,8 @@ pdfv::MainWindow::MainWindow() noexcept
 		f(::GetDeviceCaps(screen, LOGPIXELSX)) / 96.0f,
 		f(::GetDeviceCaps(screen, LOGPIXELSY)) / 96.0f
 	};
+	::DeleteDC(screen);
+
 	this->m_menuSize = ::GetSystemMetrics(SM_CYMENU);
 	this->m_usableArea = dip({ APP_DEFSIZE_X, APP_DEFSIZE_Y }, dpi);
 	this->m_defaultFont = ::CreateFontW(
@@ -76,8 +78,160 @@ pdfv::MainWindow::MainWindow() noexcept
 
 pdfv::MainWindow::~MainWindow() noexcept
 {
-	::DeleteObject(this->m_defaultFont);
+	if (this->m_defaultFont != nullptr)
+	{
+		::DeleteObject(this->m_defaultFont);
+		this->m_defaultFont = nullptr;
+	}
 }
+
+[[nodiscard]] bool pdfv::MainWindow::init(HINSTANCE hinst, int argc, wchar_t ** argv) noexcept
+{
+	this->m_hInst = hinst;
+	this->m_argc  = argc;
+	this->m_argv  = argv;
+
+	::SetProcessDPIAware();
+
+	// Init common controls
+	
+	if (!initCC()) [[unlikely]]
+	{
+		return false;
+	}
+
+	// Register classes
+	this->m_wcex.style        = CS_HREDRAW | CS_VREDRAW;
+	this->m_wcex.lpfnWndProc  = &MainWindow::windowProc;
+	this->m_wcex.hInstance    = hinst;
+	this->m_wcex.hIcon        = ::LoadIconW(hinst, IDI_APPLICATION);
+	this->m_wcex.lpszMenuName = MAKEINTRESOURCEW(IDR_MAINMENU);
+	this->m_wcex.hIconSm      = ::LoadIconW(hinst, IDI_APPLICATION);
+
+	if (!registerClasses(this->m_wcex)) [[unlikely]]
+	{
+		error::lastErr = error::registerclass;
+		return false;
+	}
+
+	this->m_wcex.lpfnWndProc   = &pdfv::TabObject::tabProc;
+	this->m_wcex.lpszClassName = APP_CLASSNAME "Tab";
+	this->m_wcex.lpszMenuName  = nullptr;
+	this->m_wcex.hbrBackground = ::CreateSolidBrush(RGB(255, 255, 255));
+	
+	if (!registerClasses(this->m_wcex))
+	{
+		error::lastErr = error::registertab;
+		return false;
+	}
+
+	this->m_wcex.lpfnWndProc   = &pdfv::MainWindow::aboutProc;
+	this->m_wcex.lpszClassName = APP_CLASSNAME "About";
+	this->m_wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW);
+	
+	if (!registerClasses(this->m_wcex))
+	{
+		error::lastErr = error::registerabout;
+		this->m_helpAvailable = false;
+	}
+
+	return true;
+}
+
+[[nodiscard]] bool pdfv::MainWindow::run(const wchar_t * fname, int nCmdShow) noexcept
+{
+	this->m_hwnd = ::CreateWindowExW(
+		0,
+		APP_CLASSNAME,
+		APP_NAME,
+		WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS,
+		CW_USEDEFAULT,
+		CW_USEDEFAULT,
+		CW_USEDEFAULT,
+		CW_USEDEFAULT,
+		nullptr,
+		nullptr,
+		this->m_hInst,
+		const_cast<wchar_t *>(fname)
+	);
+	if (this->m_hwnd == nullptr)
+	{
+		error::lastErr = error::window;
+		return false;
+	}
+
+	// Add "about" to system menu (menu when caption bar is right-clicked)
+	if (this->m_helpAvailable)
+	{
+		auto hSysMenu = ::GetSystemMenu(this->m_hwnd, false);
+		::InsertMenuW(hSysMenu, 5, MF_BYPOSITION | MF_SEPARATOR, 0, nullptr);
+		::InsertMenuW(hSysMenu, 6, MF_BYPOSITION, IDM_HELP_ABOUT, L"&About");
+	}
+	else
+	{
+		::EnableMenuItem(::GetMenu(this->m_hwnd), IDM_HELP_ABOUT, MF_DISABLED);
+	}
+	this->m_hAccelerators = ::LoadAcceleratorsW(this->m_hInst, MAKEINTRESOURCEW(IDR_ACCELERATOR1));
+
+	::ShowWindow(this->m_hwnd, nCmdShow);
+	// Good practise
+	::UpdateWindow(this->m_hwnd);
+	
+	return true;
+}
+
+int pdfv::MainWindow::msgLoop() const noexcept
+{
+	MSG msg{};
+	BOOL bRet{};
+
+	while ((bRet = ::GetMessageW(&msg, nullptr, 0, 0)) != 0)
+	{
+		if (bRet == -1) [[unlikely]]
+		{
+			// Some error happened
+			auto lastError = ::GetLastError();
+			wchar_t errText[256], temp[256];
+			switch (lastError)
+			{
+			case ERROR_INVALID_WINDOW_HANDLE:
+			case ERROR_INVALID_ACCEL_HANDLE:
+			case ERROR_INVALID_MENU_HANDLE:
+			case ERROR_INVALID_ICON_HANDLE:
+			case ERROR_INVALID_CURSOR_HANDLE:
+				::FormatMessageW(
+					FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+					nullptr,
+					lastError,
+					MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+					temp,
+					256,
+					nullptr
+				);
+				::swprintf_s(errText, L"%s\nError code: " PTRPRINT, temp, lastError);
+				break;
+			default:
+				::swprintf_s(errText, L"Unknown hard error!\nError code: " PTRPRINT, lastError);
+			}
+			this->message(errText, MB_ICONERROR | MB_OK);
+			return lastError;
+		}
+		else [[likely]]
+		{
+			if (!::TranslateAcceleratorW(this->m_hwnd, this->m_hAccelerators, &msg))
+			{
+				if (!::IsDialogMessageW(this->m_hwnd, &msg))
+				{
+					::TranslateMessage(&msg);
+					::DispatchMessageW(&msg);
+				}
+			}
+		}
+	}
+
+	return int(msg.wParam);
+}
+
 
 void pdfv::MainWindow::enable(bool enable) const noexcept
 {
@@ -89,13 +243,13 @@ void pdfv::MainWindow::setTitle(std::wstring_view newTitle)
 	::SetWindowTextW(this->m_hwnd, this->m_title.c_str());
 }
 
-int pdfv::MainWindow::message(std::wstring_view message, std::wstring_view msgtitle, UINT type) const noexcept
+int pdfv::MainWindow::message(LPCWSTR message, LPCWSTR msgtitle, UINT type) const noexcept
 {
-	return ::MessageBoxW(this->m_hwnd, message.data(), msgtitle.data(), type);
+	return ::MessageBoxW(this->m_hwnd, message, msgtitle, type);
 }
-int pdfv::MainWindow::message(std::wstring_view message, UINT type) const noexcept
+int pdfv::MainWindow::message(LPCWSTR message, UINT type) const noexcept
 {
-	return ::MessageBoxW(this->m_hwnd, message.data(), this->m_title.c_str(), type);
+	return ::MessageBoxW(this->m_hwnd, message, this->m_title.c_str(), type);
 }
 
 LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept
@@ -114,14 +268,12 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 		switch (LOWORD(wp))
 		{
 		case IDM_FILE_OPEN:
-		{
-			std::wstring file;
-			if (mwnd.m_openDialog.open(hwnd, file)) {
+			if (std::wstring file; mwnd.m_openDialog.open(hwnd, file))
+			{
 				// Open the PDF
 				mwnd.openPdfFile(file);
 			}
 			break;
-		}
 		case IDM_FILE_CLOSETAB:
 			// Close current tab
 			if (mwnd.m_tabs.size() > 1)
@@ -138,7 +290,7 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 				else
 				{
 					auto it = mwnd.m_tabs.rename(Tabs::defaulttitle);
-					it->second.pdfUnload();
+					it->second->pdfUnload();
 					it->updatePDF();
 				}
 			}
@@ -173,17 +325,17 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 			break;
 		}
 		default:
-			if (wp >= IDM_LIMIT && wp < (IDM_LIMIT + mwnd.m_tabs.size()))
+			if (const auto comp = int(wp) - IDM_LIMIT; comp >= 0 && comp < int(mwnd.m_tabs.size()))
 			{
-				auto const comp = int(wp) - IDM_LIMIT;
 				if (mwnd.m_tabs.size() > 1)
 				{
-					mwnd.m_tabs.remove(comp);
+					printf("Remove tab %d\n", comp);
 					if ((comp < mwnd.m_tabs.m_tabindex) ||
-						(mwnd.m_tabs.m_tabindex == int(mwnd.m_tabs.size())))
+						(mwnd.m_tabs.m_tabindex == int(mwnd.m_tabs.size() - 1)))
 					{
 						--mwnd.m_tabs.m_tabindex;
 					}
+					mwnd.m_tabs.remove(comp);
 					mwnd.m_tabs.select(mwnd.m_tabs.m_tabindex);
 				}
 				else
@@ -195,7 +347,7 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 					else
 					{
 						auto it = mwnd.m_tabs.rename(Tabs::defaulttitle);
-						it->second.pdfUnload();
+						it->second->pdfUnload();
 						it->updatePDF();
 					}
 				}
@@ -321,6 +473,7 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 		break;
 	case WM_CLOSE:
 		::DestroyWindow(hwnd);
+		mwnd.m_hwnd = nullptr;
 		break;
 	case WM_DESTROY:
 		::PostQuitMessage(pdfv::error::success);
@@ -466,7 +619,7 @@ void pdfv::MainWindow::openPdfFile(std::wstring_view file) noexcept
 		it = this->m_tabs.insert(fshort);
 	}
 	
-	it->second.pdfLoad(std::wstring(file));
+	it->second->pdfLoad(std::wstring(file));
 	it->updatePDF();
 
 	this->m_tabs.select();

@@ -30,18 +30,36 @@ namespace pdfv
 		//
 		// 	An array of error messages encoded in UTF-16 (Windows Unicode)
 		//
-		extern const wchar_t* errMsgs[max_error];
+		extern const wchar_t * errMsgs[max_error];
 
-		//
-		//	Displays error messages based on error id
-		//	Makes handle (passed as second parameter)
-		//	the owner of the Message Box
-		//
+		/**
+		 * @brief Displays error messages
+		 * 
+		 * @param errid Error message id
+		 * @param hwnd Owner of the messagebox
+		 */
 		void report(Errorcode errid, HWND hwnd) noexcept;
-		//
-		//	Displays error messages based on error id
-		//	Message Box owner is the main window
-		//
+		/**
+		 * @brief Displays error messages, messagebox owner is the main window
+		 * 
+		 * @param errid Error message id
+		 */
 		void report(Errorcode errid) noexcept;
+
+		extern Errorcode lastErr;
+
+		/**
+		 * @brief Displays error messages based on last error id
+		 * Messagebox owner is the main window
+		 * 
+		 */
+		void report() noexcept;
+
+		/**
+		 * @brief Displays error messages based on last error id
+		 * @param hwnd Owner of the messagebox
+		 * 
+		 */
+		void report(HWND hwnd) noexcept;
 	}
 }
