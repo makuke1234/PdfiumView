@@ -108,6 +108,18 @@ namespace pdfv
 		//	The Windows API callback function for the main window "class"
 		//
 		static LRESULT CALLBACK windowProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept;
+		
+		void wOnCommand(WPARAM wp) noexcept;
+		void wOnKeydown(WPARAM wp) noexcept;
+		void wOnMousewheel(WPARAM wp) noexcept;
+		LRESULT wOnNotify(LPARAM lp) noexcept;
+		void wOnMove(LPARAM lp) noexcept;
+		void wOnSizing(WPARAM wp, LPARAM lp) noexcept;
+		void wOnSize() noexcept;
+		void wOnCreate(HWND hwnd, LPARAM lp) noexcept;
+		void wOnCopydata(LPARAM lp) noexcept;
+		void wOnBringToFront() noexcept;
+
 		//
 		//	The Windows API callback function for the Help->About "class"
 		//

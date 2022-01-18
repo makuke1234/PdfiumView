@@ -78,6 +78,11 @@ pdfv::MainWindow::MainWindow() noexcept
 
 pdfv::MainWindow::~MainWindow() noexcept
 {
+	if (this->m_hwnd != nullptr)
+	{
+		::DestroyWindow(this->m_hwnd);
+		this->m_hwnd = nullptr;
+	}
 	if (this->m_defaultFont != nullptr)
 	{
 		::DeleteObject(this->m_defaultFont);
@@ -256,318 +261,342 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 {
 	switch (uMsg)
 	{
-	case WM_PAINT:
-	{
-		PAINTSTRUCT ps{};
-		[[maybe_unused]] auto hdc = ::BeginPaint(hwnd, &ps);
-		
-		::EndPaint(hwnd, &ps);
-		break;
-	}
 	case WM_COMMAND:
-		switch (LOWORD(wp))
-		{
-		case IDM_FILE_OPEN:
-			if (std::wstring file; mwnd.m_openDialog.open(hwnd, file))
-			{
-				// Open the PDF
-				mwnd.openPdfFile(file);
-			}
-			break;
-		case IDM_FILE_CLOSETAB:
-			// Close current tab
-			if (mwnd.m_tabs.size() > 1)
-			{
-				mwnd.m_tabs.remove(mwnd.m_tabs.m_tabindex);
-				mwnd.m_tabs.select();
-			}
-			else
-			{
-				if (mwnd.m_tabs.getName() == Tabs::defaulttitlepadded)
-				{
-					::DestroyWindow(hwnd);
-				}
-				else
-				{
-					auto it = mwnd.m_tabs.rename(Tabs::defaulttitle);
-					it->second->pdfUnload();
-					it->updatePDF();
-				}
-			}
-			break;
-		case IDM_FILE_EXIT:
-			::DestroyWindow(hwnd);
-			break;
-		case IDM_HELP_ABOUT:
-			if (mwnd.m_helpAvailable)
-			{
-				aboutBox();
-			}
-			break;
-		case IDC_TABULATE:
-		{
-			ssize_t idx = mwnd.m_tabs.m_tabindex + 1;
-			if (idx == ssize_t(mwnd.m_tabs.size()))
-			{
-				idx = 0;
-			}
-			mwnd.m_tabs.select(idx);
-			break;
-		}	
-		case IDC_TABULATEBACK:
-		{
-			ssize_t idx = mwnd.m_tabs.m_tabindex - 1;
-			if (idx == -1)
-			{
-				idx = mwnd.m_tabs.size() - 1;
-			}
-			mwnd.m_tabs.select(idx);
-			break;
-		}
-		default:
-			if (const auto comp = int(wp) - IDM_LIMIT; comp >= 0 && comp < int(mwnd.m_tabs.size()))
-			{
-				if (mwnd.m_tabs.size() > 1)
-				{
-					printf("Remove tab %d\n", comp);
-					if ((comp < mwnd.m_tabs.m_tabindex) ||
-						(mwnd.m_tabs.m_tabindex == int(mwnd.m_tabs.size() - 1)))
-					{
-						--mwnd.m_tabs.m_tabindex;
-					}
-					mwnd.m_tabs.remove(comp);
-					mwnd.m_tabs.select(mwnd.m_tabs.m_tabindex);
-				}
-				else
-				{
-					if (mwnd.m_tabs.getName() == Tabs::defaulttitlepadded)
-					{
-						::DestroyWindow(hwnd);
-					}
-					else
-					{
-						auto it = mwnd.m_tabs.rename(Tabs::defaulttitle);
-						it->second->pdfUnload();
-						it->updatePDF();
-					}
-				}
-			}
-		}
+		mwnd.wOnCommand(wp);
 		break;
 	case WM_KEYDOWN:
-	{
-		auto target{ mwnd.m_tabs.m_tabs[mwnd.m_tabs.m_tabindex].tabhandle };
-		switch (wp)
-		{
-		case VK_HOME:
-			::SendMessageW(target, WM_VSCROLL, MAKELONG(SB_TOP, 0), 0);
-			break;
-		case VK_END:
-			::SendMessageW(target, WM_VSCROLL, MAKELONG(SB_BOTTOM, 0), 0);
-			break;
-		case VK_NEXT:
-			::SendMessageW(target, WM_VSCROLL, MAKELONG(SB_LINEDOWN, 0), 0);
-			break;
-		case VK_PRIOR:
-			::SendMessageW(target, WM_VSCROLL, MAKELONG(SB_LINEUP, 0), 0);
-			break;
-		}
+		mwnd.wOnKeydown(wp);
 		break;
-	}
 	case WM_MOUSEWHEEL:
-	{
-		static int delta = 0;
-		delta += int(GET_WHEEL_DELTA_WPARAM(wp));
-
-		if (std::abs(delta) >= WHEEL_DELTA)
-		{
-			POINT p;
-			::GetCursorPos(&p);
-			auto pt1{ xy<int>{ p.x, p.y } - mwnd.m_pos };
-			auto pt2{ mwnd.m_tabs.m_pos  + mwnd.m_tabs.m_offset };
-			auto sz { mwnd.m_tabs.m_size - mwnd.m_tabs.m_offset };
-
-			short dir = delta > 0 ? SB_LINEUP : SB_LINEDOWN;
-			if (pt1.x >= pt2.x && pt1.x <= (pt2.x + sz.x) &&
-				pt1.y >= pt2.y && pt1.y <= (pt2.y + sz.y))
-			{
-				for (int i = std::abs(delta); i > 0; i -= WHEEL_DELTA)
-					::SendMessageW(
-						mwnd.m_tabs.m_tabs[mwnd.m_tabs.m_tabindex].tabhandle,
-						WM_VSCROLL,
-						MAKELONG(dir, 0),
-						0
-					);
-			}
-			delta %= ((delta < 0) * -1 + (delta >= 0)) * WHEEL_DELTA;
-		}
+		mwnd.wOnMousewheel(wp);
 		break;
-	}
 	case WM_NOTIFY:
-		switch (reinterpret_cast<NMHDR *>(lp)->code)
-		{
-		case TCN_KEYDOWN:
-		{
-			auto kd = reinterpret_cast<NMTCKEYDOWN *>(lp);
-			::SendMessageW(hwnd, WM_KEYDOWN, kd->wVKey, kd->flags);
-			break;
-		}
-		case TCN_SELCHANGING:
-			return FALSE;
-		case TCN_SELCHANGE:
-			mwnd.m_tabs.selChange();
-			break;
-		}
-		break;
+		return mwnd.wOnNotify(lp);
 	case WM_MOVE:
-		mwnd.m_pos = { LOWORD(lp), HIWORD(lp) };
+		mwnd.wOnMove(lp);
 		break;
 	case WM_SIZING:
-	{
-		auto r = reinterpret_cast<RECT*>(lp);
-		if ((r->right - r->left) < mwnd.m_minArea.x)
-		{
-			switch (wp)
-			{
-			case WMSZ_BOTTOMRIGHT:
-			case WMSZ_RIGHT:
-			case WMSZ_TOPRIGHT:
-				r->right = r->left + mwnd.m_minArea.x;
-				break;
-			case WMSZ_BOTTOMLEFT:
-			case WMSZ_LEFT:
-			case WMSZ_TOPLEFT:
-				r->left = r->right - mwnd.m_minArea.x;
-				break;
-			}
-		}
-		if ((r->bottom - r->top) < mwnd.m_minArea.y)
-		{
-			switch (wp)
-			{
-			case WMSZ_BOTTOM:
-			case WMSZ_BOTTOMLEFT:
-			case WMSZ_BOTTOMRIGHT:
-				r->bottom = r->top + mwnd.m_minArea.y;
-				break;
-			case WMSZ_TOP:
-			case WMSZ_TOPLEFT:
-			case WMSZ_TOPRIGHT:
-				r->top = r->bottom - mwnd.m_minArea.y;
-				break;
-			}
-		}
+		mwnd.wOnSizing(wp, lp);
 		break;
-	}
 	case WM_SIZE:
-		mwnd.m_usableArea = { LOWORD(lp), HIWORD(lp) };
-		{
-			RECT r{};
-			::GetWindowRect(hwnd, &r);
-			mwnd.m_totalArea = { r.right - r.left, r.bottom - r.top };
-		}
-		mwnd.m_border = mwnd.m_totalArea - mwnd.m_usableArea;
-		mwnd.m_border.y -= mwnd.m_menuSize;
-
-		mwnd.m_tabs.resize(mwnd.m_usableArea);
+		mwnd.wOnSize();
 		break;
 	case WM_CLOSE:
-		::DestroyWindow(hwnd);
-		mwnd.m_hwnd = nullptr;
+		mwnd.~MainWindow();
 		break;
 	case WM_DESTROY:
 		::PostQuitMessage(pdfv::error::success);
 		break;
-	case WM_CREATE:	// "Create" co-routine
-		// Get border size
-		mwnd.m_hwnd = hwnd;
-		{
-			RECT r1{}, r2{};
-			::GetClientRect(hwnd, &r1);
-			::GetWindowRect(hwnd, &r2);
-			mwnd.m_border = {
-				(r2.right  - r2.left) - r1.right,
-				(r2.bottom - r2.top)  - r1.bottom
-			};
-			mwnd.m_totalArea = mwnd.m_usableArea + mwnd.m_border;
-			mwnd.m_totalArea.y += mwnd.m_menuSize;
-			mwnd.m_minArea = mwnd.m_totalArea;
-			mwnd.m_pos = { r2.left, r2.top };
-		}
-		::MoveWindow(
-			hwnd,
-			mwnd.m_pos.x, mwnd.m_pos.y,
-			mwnd.m_totalArea.x, mwnd.m_totalArea.y,
-			true
-		);
-		{
-			wchar_t temp[2048];
-			auto len = ::GetWindowTextW(hwnd, temp, 2048);
-			mwnd.m_title.assign(temp, len);
-		}
-
-		mwnd.m_tabs = Tabs(hwnd, mwnd.getHinst());
-		::SendMessageW(
-			mwnd.m_tabs.m_tabshwnd,
-			WM_SETFONT,
-			reinterpret_cast<WPARAM>(mwnd.m_defaultFont),
-			false
-		);
-
-		mwnd.m_tabs.insert(Tabs::defaulttitle);
-
-		// Open PDF if any
-		{
-			const wchar_t * fname{
-				static_cast<wchar_t *>(reinterpret_cast<CREATESTRUCTW *>(lp)->lpCreateParams)
-			};
-			if (fname != nullptr && fname[0] != '\0')
-			{
-				// Open pdf
-				std::wstring_view fnv(fname);
-				mwnd.openPdfFile(fnv);
-				mwnd.m_openDialog.updateName(fnv);
-			}
-		}
+	case WM_CREATE:
+		mwnd.wOnCreate(hwnd, lp);
 		break;
 	case WM_COPYDATA:
-	{
-		auto receive = reinterpret_cast<const COPYDATASTRUCT *>(lp);
-		if (receive != nullptr && receive->dwData > 0)
-		{
-			// Open pdf
-			std::wstring_view fnv(static_cast<wchar_t *>(receive->lpData));
-			if (fnv.length() == 0)
-			{
-				break;
-			}
-			mwnd.openPdfFile(fnv);
-			mwnd.m_openDialog.updateName(fnv);
-		}
+		mwnd.wOnCopydata(lp);
 		break;
-	}
 	case pdfv::MainWindow::WM_BRINGTOFRONT:
-	{
-		::ShowWindow(hwnd, SW_RESTORE);
-		HWND curWnd = ::GetForegroundWindow();
-
-		DWORD dwMyID  = ::GetWindowThreadProcessId(hwnd, nullptr);
-		DWORD dwCurID = ::GetWindowThreadProcessId(curWnd, nullptr);
-		::AttachThreadInput(dwCurID, dwMyID, TRUE);
-		::SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
-		::SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
-		::SetForegroundWindow(hwnd);
-		::SetFocus(hwnd);
-		::SetActiveWindow(hwnd);
-		::AttachThreadInput(dwCurID, dwMyID, FALSE);
+		mwnd.wOnBringToFront();
 		break;
-	}
 	default:
 		return ::DefWindowProcW(hwnd, uMsg, wp, lp);
 	}
 
 	return 0;
 }
+
+void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
+{
+	switch (LOWORD(wp))
+	{
+	case IDM_FILE_OPEN:
+		if (std::wstring file; this->m_openDialog.open(this->m_hwnd, file))
+		{
+			// Open the PDF
+			this->openPdfFile(file);
+		}
+		break;
+	case IDM_FILE_CLOSETAB:
+		// Close current tab
+		if (this->m_tabs.size() > 1)
+		{
+			this->m_tabs.remove(this->m_tabs.m_tabindex);
+			this->m_tabs.select();
+		}
+		else
+		{
+			if (this->m_tabs.getName() == Tabs::defaulttitlepadded)
+			{
+				this->~MainWindow();
+			}
+			else
+			{
+				auto it = this->m_tabs.rename(Tabs::defaulttitle);
+				it->second->pdfUnload();
+				it->updatePDF();
+			}
+		}
+		break;
+	case IDM_FILE_EXIT:
+		this->~MainWindow();
+		break;
+	case IDM_HELP_ABOUT:
+		if (this->m_helpAvailable)
+		{
+			aboutBox();
+		}
+		break;
+	case IDC_TABULATE:
+	{
+		ssize_t idx = this->m_tabs.m_tabindex + 1;
+		if (idx == ssize_t(this->m_tabs.size()))
+		{
+			idx = 0;
+		}
+		this->m_tabs.select(idx);
+		break;
+	}	
+	case IDC_TABULATEBACK:
+	{
+		ssize_t idx = this->m_tabs.m_tabindex - 1;
+		if (idx == -1)
+		{
+			idx = this->m_tabs.size() - 1;
+		}
+		this->m_tabs.select(idx);
+		break;
+	}
+	default:
+		if (const auto comp = int(wp) - IDM_LIMIT; comp >= 0 && comp < int(this->m_tabs.size()))
+		{
+			if (this->m_tabs.size() > 1)
+			{
+				printf("Remove tab %d\n", comp);
+				if ((comp < this->m_tabs.m_tabindex) ||
+					(this->m_tabs.m_tabindex == int(this->m_tabs.size() - 1)))
+				{
+					--this->m_tabs.m_tabindex;
+				}
+				this->m_tabs.remove(comp);
+				this->m_tabs.select(this->m_tabs.m_tabindex);
+			}
+			else
+			{
+				if (this->m_tabs.getName() == Tabs::defaulttitlepadded)
+				{
+					this->~MainWindow();
+				}
+				else
+				{
+					auto it = this->m_tabs.rename(Tabs::defaulttitle);
+					it->second->pdfUnload();
+					it->updatePDF();
+				}
+			}
+		}
+	}
+}
+void pdfv::MainWindow::wOnKeydown(WPARAM wp) noexcept
+{
+	auto target{ mwnd.m_tabs.m_tabs[mwnd.m_tabs.m_tabindex].tabhandle };
+	switch (wp)
+	{
+	case VK_HOME:
+		::SendMessageW(target, WM_VSCROLL, MAKELONG(SB_TOP, 0), 0);
+		break;
+	case VK_END:
+		::SendMessageW(target, WM_VSCROLL, MAKELONG(SB_BOTTOM, 0), 0);
+		break;
+	case VK_NEXT:
+		::SendMessageW(target, WM_VSCROLL, MAKELONG(SB_LINEDOWN, 0), 0);
+		break;
+	case VK_PRIOR:
+		::SendMessageW(target, WM_VSCROLL, MAKELONG(SB_LINEUP, 0), 0);
+		break;
+	}
+}
+void pdfv::MainWindow::wOnMousewheel(WPARAM wp) noexcept
+{
+	static int delta = 0;
+	delta += int(GET_WHEEL_DELTA_WPARAM(wp));
+
+	if (std::abs(delta) >= WHEEL_DELTA)
+	{
+		POINT p;
+		::GetCursorPos(&p);
+		auto pt1{ xy<int>{ p.x, p.y } - mwnd.m_pos };
+		auto pt2{ mwnd.m_tabs.m_pos  + mwnd.m_tabs.m_offset };
+		auto sz { mwnd.m_tabs.m_size - mwnd.m_tabs.m_offset };
+
+		short dir = delta > 0 ? SB_LINEUP : SB_LINEDOWN;
+		if (pt1.x >= pt2.x && pt1.x <= (pt2.x + sz.x) &&
+			pt1.y >= pt2.y && pt1.y <= (pt2.y + sz.y))
+		{
+			for (int i = std::abs(delta); i > 0; i -= WHEEL_DELTA)
+				::SendMessageW(
+					mwnd.m_tabs.m_tabs[mwnd.m_tabs.m_tabindex].tabhandle,
+					WM_VSCROLL,
+					MAKELONG(dir, 0),
+					0
+				);
+		}
+		delta %= ((delta < 0) * -1 + (delta >= 0)) * WHEEL_DELTA;
+	}
+}
+LRESULT pdfv::MainWindow::wOnNotify(LPARAM lp) noexcept
+{
+	switch (reinterpret_cast<NMHDR *>(lp)->code)
+	{
+	case TCN_KEYDOWN:
+	{
+		auto kd = reinterpret_cast<NMTCKEYDOWN *>(lp);
+		::SendMessageW(this->m_hwnd, WM_KEYDOWN, kd->wVKey, kd->flags);
+		break;
+	}
+	case TCN_SELCHANGING:
+		return FALSE;
+	case TCN_SELCHANGE:
+		this->m_tabs.selChange();
+		break;
+	}
+
+	return 0;
+}
+void pdfv::MainWindow::wOnMove(LPARAM lp) noexcept
+{
+	this->m_pos = { LOWORD(lp), HIWORD(lp) };
+}
+void pdfv::MainWindow::wOnSizing(WPARAM wp, LPARAM lp) noexcept
+{
+	auto r = reinterpret_cast<RECT*>(lp);
+	if ((r->right - r->left) < mwnd.m_minArea.x)
+	{
+		switch (wp)
+		{
+		case WMSZ_BOTTOMRIGHT:
+		case WMSZ_RIGHT:
+		case WMSZ_TOPRIGHT:
+			r->right = r->left + mwnd.m_minArea.x;
+			break;
+		case WMSZ_BOTTOMLEFT:
+		case WMSZ_LEFT:
+		case WMSZ_TOPLEFT:
+			r->left = r->right - mwnd.m_minArea.x;
+			break;
+		}
+	}
+	if ((r->bottom - r->top) < mwnd.m_minArea.y)
+	{
+		switch (wp)
+		{
+		case WMSZ_BOTTOM:
+		case WMSZ_BOTTOMLEFT:
+		case WMSZ_BOTTOMRIGHT:
+			r->bottom = r->top + mwnd.m_minArea.y;
+			break;
+		case WMSZ_TOP:
+		case WMSZ_TOPLEFT:
+		case WMSZ_TOPRIGHT:
+			r->top = r->bottom - mwnd.m_minArea.y;
+			break;
+		}
+	}
+}
+void pdfv::MainWindow::wOnSize() noexcept
+{
+	RECT r{};
+	::GetClientRect(this->m_hwnd, &r);
+	this->m_usableArea = { r.right - r.left, r.bottom - r.top };
+
+	::GetWindowRect(this->m_hwnd, &r);
+	this->m_totalArea = { r.right - r.left, r.bottom - r.top };
+	this->m_border = this->m_totalArea - this->m_usableArea;
+	this->m_border.y -= this->m_menuSize;
+
+	this->m_tabs.resize(this->m_usableArea);
+}
+void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
+{
+	mwnd.m_hwnd = hwnd;
+	{
+		RECT r1{}, r2{};
+		::GetClientRect(hwnd, &r1);
+		::GetWindowRect(hwnd, &r2);
+		mwnd.m_border = {
+			(r2.right  - r2.left) - r1.right,
+			(r2.bottom - r2.top)  - r1.bottom
+		};
+		mwnd.m_totalArea = mwnd.m_usableArea + mwnd.m_border;
+		mwnd.m_totalArea.y += mwnd.m_menuSize;
+		mwnd.m_minArea = mwnd.m_totalArea;
+		mwnd.m_pos = { r2.left, r2.top };
+	}
+	::MoveWindow(
+		hwnd,
+		mwnd.m_pos.x, mwnd.m_pos.y,
+		mwnd.m_totalArea.x, mwnd.m_totalArea.y,
+		true
+	);
+	{
+		wchar_t temp[2048];
+		auto len = ::GetWindowTextW(hwnd, temp, 2048);
+		mwnd.m_title.assign(temp, len);
+	}
+
+	mwnd.m_tabs = Tabs(hwnd, mwnd.getHinst());
+	::SendMessageW(
+		mwnd.m_tabs.m_tabshwnd,
+		WM_SETFONT,
+		reinterpret_cast<WPARAM>(mwnd.m_defaultFont),
+		false
+	);
+
+	mwnd.m_tabs.insert(Tabs::defaulttitle);
+
+	// Open PDF if any
+	{
+		const wchar_t * fname{
+			static_cast<wchar_t *>(reinterpret_cast<CREATESTRUCTW *>(lp)->lpCreateParams)
+		};
+		if (fname != nullptr && fname[0] != '\0')
+		{
+			// Open pdf
+			std::wstring_view fnv(fname);
+			mwnd.openPdfFile(fnv);
+			mwnd.m_openDialog.updateName(fnv);
+		}
+	}
+}
+void pdfv::MainWindow::wOnCopydata(LPARAM lp) noexcept
+{
+	auto receive = reinterpret_cast<const COPYDATASTRUCT *>(lp);
+	if (receive != nullptr && receive->dwData > 0)
+	{
+		// Open pdf
+		std::wstring_view fnv(static_cast<wchar_t *>(receive->lpData));
+		if (fnv.length() == 0)
+		{
+			return;
+		}
+		this->openPdfFile(fnv);
+		this->m_openDialog.updateName(fnv);
+	}
+}
+void pdfv::MainWindow::wOnBringToFront() noexcept
+{
+	auto wnd = this->m_hwnd;
+	::ShowWindow(wnd, SW_RESTORE);
+	HWND curWnd = ::GetForegroundWindow();
+
+	DWORD dwMyID  = ::GetWindowThreadProcessId(wnd, nullptr);
+	DWORD dwCurID = ::GetWindowThreadProcessId(curWnd, nullptr);
+	::AttachThreadInput(dwCurID, dwMyID, TRUE);
+	::SetWindowPos(wnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+	::SetWindowPos(wnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
+	::SetForegroundWindow(wnd);
+	::SetFocus(wnd);
+	::SetActiveWindow(wnd);
+	::AttachThreadInput(dwCurID, dwMyID, FALSE);
+}
+
 
 LRESULT CALLBACK pdfv::MainWindow::aboutProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp) noexcept
 {
