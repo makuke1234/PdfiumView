@@ -6,11 +6,13 @@
 
 std::function<void(wchar_t **)> pdfv::getArgsFree = [](wchar_t ** argVec) noexcept
 {
+	DEBUGPRINT("pdfv::getArgsFree(%p)\n", argVec);
 	::LocalFree(argVec);
 };
 
 [[nodiscard]] std::unique_ptr<wchar_t *, decltype(pdfv::getArgsFree)> pdfv::getArgs(LPWSTR cmdLine, int & argc) noexcept
 {
+	DEBUGPRINT("pdfv::getArgs(%p, %p)\n", cmdLine, &argc);
 	wchar_t ** argv = ::CommandLineToArgvW(cmdLine, &argc);
 	if (argv == nullptr)
 	{
@@ -45,6 +47,7 @@ pdfv::xy<float> pdfv::dpi{ 1.0f, 1.0f };
 
 [[nodiscard]] ATOM pdfv::registerClasses(WNDCLASSEXW & wcex) noexcept
 {
+	DEBUGPRINT("pdfv::RegisterClasses(%p)\n", &wcex);
 	if (wcex.cbSize == 0)
 	{
 		wcex.cbSize = sizeof(WNDCLASSEXW);
@@ -84,6 +87,7 @@ namespace pdfv
 
 	LRESULT CALLBACK askProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept
 	{
+		DEBUGPRINT("askProc(%p, %u, %lu %lu)\n", hwnd, uMsg, wp, lp);
 		static wchar_t * textdata{};
 		static HWND textbox{}, messagebox{};
 		
@@ -203,6 +207,8 @@ namespace pdfv
 
 [[nodiscard]] std::wstring pdfv::askInfo(std::wstring_view message, std::wstring_view title) noexcept
 {
+	DEBUGPRINT("pdfv::askInfo(%p, %p)\n", message.data(), title.data());
+
 	WNDCLASSEXW wc{ MainWindow::mwnd.getWindowClass() };
 	wc.lpfnWndProc   = &pdfv::askProc;
 	wc.lpszClassName = L"AskInfoClass";
@@ -262,6 +268,8 @@ namespace pdfv
 
 [[nodiscard]] std::wstring pdfv::utf::conv(std::string_view str)
 {
+	DEBUGPRINT("pdfv::utf::conv(string_view %p)\n", str.data());
+	
 	auto len = ::MultiByteToWideChar(
 		CP_UTF8,
 		MB_PRECOMPOSED,
@@ -287,6 +295,8 @@ namespace pdfv
 }
 [[nodiscard]] std::string pdfv::utf::conv(std::wstring_view wstr)
 {
+	DEBUGPRINT("pdfv::utf::conv(wstring_view %p)\n", wstr.data());
+
 	auto len = ::WideCharToMultiByte(
 		CP_UTF8,
 		0,

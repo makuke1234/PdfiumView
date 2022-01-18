@@ -22,6 +22,8 @@ const wchar_t * pdfv::error::errMsgs[pdfv::error::max_error]
 
 void pdfv::error::report(pdfv::error::Errorcode errid, HWND hwnd) noexcept
 {
+	DEBUGPRINT("pdfv::error::report(%d, %p)\n", errid, hwnd);
+	
 	static const wchar_t * emptyTitle = L"";
 
 	assert((errid >= success) && (errid < max_error));

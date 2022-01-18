@@ -4,6 +4,8 @@
 
 int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR cmdLine, int nCmdShow)
 {
+	DEBUGPRINT("wWinMain(%p, , %p, %d)\n", hInst, cmdLine, nCmdShow);
+
 	int argc;
 	auto argv = pdfv::getArgs(cmdLine, argc);
 

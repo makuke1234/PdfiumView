@@ -6,6 +6,7 @@ pdfv::MainWindow pdfv::MainWindow::mwnd;
 
 void pdfv::MainWindow::aboutBox() noexcept
 {
+	DEBUGPRINT("pdfv::MainWindow::aboutBox()\n");
 	mwnd.enable(false);
 	bool finished{ false };
 	auto sz{ dip({ s_cAboutBoxSizeX, s_cAboutBoxSizeY }, dpi) };
@@ -49,6 +50,7 @@ void pdfv::MainWindow::aboutBox() noexcept
 
 pdfv::MainWindow::MainWindow() noexcept
 {
+	DEBUGPRINT("pdfv::MainWindow::MainWindow()\n");
 	auto screen = ::GetDC(nullptr);
 	dpi = {
 		f(::GetDeviceCaps(screen, LOGPIXELSX)) / 96.0f,
@@ -78,6 +80,7 @@ pdfv::MainWindow::MainWindow() noexcept
 
 pdfv::MainWindow::~MainWindow() noexcept
 {
+	DEBUGPRINT("pdfv::MainWindow::~MainWindow()\n");
 	if (this->m_hwnd != nullptr)
 	{
 		::DestroyWindow(this->m_hwnd);
@@ -92,6 +95,7 @@ pdfv::MainWindow::~MainWindow() noexcept
 
 [[nodiscard]] bool pdfv::MainWindow::init(HINSTANCE hinst, int argc, wchar_t ** argv) noexcept
 {
+	DEBUGPRINT("pdfv::MainWindow::init(%p, %d, %p)\n", hinst, argc, argv);
 	this->m_hInst = hinst;
 	this->m_argc  = argc;
 	this->m_argv  = argv;
@@ -145,6 +149,7 @@ pdfv::MainWindow::~MainWindow() noexcept
 
 [[nodiscard]] bool pdfv::MainWindow::run(const wchar_t * fname, int nCmdShow) noexcept
 {
+	DEBUGPRINT("pdfv::MainWindow::run(%p, %d)\n", fname, nCmdShow);
 	this->m_hwnd = ::CreateWindowExW(
 		0,
 		APP_CLASSNAME,
@@ -187,6 +192,7 @@ pdfv::MainWindow::~MainWindow() noexcept
 
 int pdfv::MainWindow::msgLoop() const noexcept
 {
+	DEBUGPRINT("pdfv::MainWindow::msgLoop()\n");
 	MSG msg{};
 	BOOL bRet{};
 
@@ -240,20 +246,24 @@ int pdfv::MainWindow::msgLoop() const noexcept
 
 void pdfv::MainWindow::enable(bool enable) const noexcept
 {
+	DEBUGPRINT("pdfv::MainWindow::enable(%d)\n", enable);
 	::EnableWindow(this->m_hwnd, enable);
 }
 void pdfv::MainWindow::setTitle(std::wstring_view newTitle)
 {
+	DEBUGPRINT("pdfv::MainWindow::setTitle(%p)\n", newTitle.data());
 	this->m_title = newTitle;
 	::SetWindowTextW(this->m_hwnd, this->m_title.c_str());
 }
 
 int pdfv::MainWindow::message(LPCWSTR message, LPCWSTR msgtitle, UINT type) const noexcept
 {
+	DEBUGPRINT("pdfv::MainWindow::message(%p, %p, %u)\n", message, msgtitle, type);
 	return ::MessageBoxW(this->m_hwnd, message, msgtitle, type);
 }
 int pdfv::MainWindow::message(LPCWSTR message, UINT type) const noexcept
 {
+	DEBUGPRINT("pdfv::MainWindow::message(%p, %u)\n", message, type);
 	return ::MessageBoxW(this->m_hwnd, message, this->m_title.c_str(), type);
 }
 
@@ -305,6 +315,7 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 
 void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 {
+	DEBUGPRINT("pdfv::MainWindow::onCommand(%lu)\n", wp);
 	switch (LOWORD(wp))
 	{
 	case IDM_FILE_OPEN:
@@ -396,6 +407,7 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 }
 void pdfv::MainWindow::wOnKeydown(WPARAM wp) noexcept
 {
+	DEBUGPRINT("pdfv::MainWindow::wOnKeyDown(%lu)\n", wp);
 	auto target{ mwnd.m_tabs.m_tabs[mwnd.m_tabs.m_tabindex].tabhandle };
 	switch (wp)
 	{
@@ -415,6 +427,7 @@ void pdfv::MainWindow::wOnKeydown(WPARAM wp) noexcept
 }
 void pdfv::MainWindow::wOnMousewheel(WPARAM wp) noexcept
 {
+	DEBUGPRINT("pdfv::MainWindow::wOnMousewheel(%lu)\n", wp);
 	static int delta = 0;
 	delta += int(GET_WHEEL_DELTA_WPARAM(wp));
 
@@ -443,6 +456,7 @@ void pdfv::MainWindow::wOnMousewheel(WPARAM wp) noexcept
 }
 LRESULT pdfv::MainWindow::wOnNotify(LPARAM lp) noexcept
 {
+	DEBUGPRINT("pdfv::MainWIndow::wOnNotify(%lu)\n", lp);
 	switch (reinterpret_cast<NMHDR *>(lp)->code)
 	{
 	case TCN_KEYDOWN:
@@ -462,10 +476,12 @@ LRESULT pdfv::MainWindow::wOnNotify(LPARAM lp) noexcept
 }
 void pdfv::MainWindow::wOnMove(LPARAM lp) noexcept
 {
+	DEBUGPRINT("pdfv::MainWindow::wOnMove(%lu)\n", lp);
 	this->m_pos = { LOWORD(lp), HIWORD(lp) };
 }
 void pdfv::MainWindow::wOnSizing(WPARAM wp, LPARAM lp) noexcept
 {
+	DEBUGPRINT("pdfv::MainWindow::wOnSizing(%lu, %lu)\n", wp, lp);
 	auto r = reinterpret_cast<RECT*>(lp);
 	if ((r->right - r->left) < mwnd.m_minArea.x)
 	{
@@ -502,6 +518,7 @@ void pdfv::MainWindow::wOnSizing(WPARAM wp, LPARAM lp) noexcept
 }
 void pdfv::MainWindow::wOnSize() noexcept
 {
+	DEBUGPRINT("pdfv::MainWindow::wOnSize()\n");
 	RECT r{};
 	::GetClientRect(this->m_hwnd, &r);
 	this->m_usableArea = { r.right - r.left, r.bottom - r.top };
@@ -515,6 +532,7 @@ void pdfv::MainWindow::wOnSize() noexcept
 }
 void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
 {
+	DEBUGPRINT("pdfv::MainWindow::wOnCreate(%p, %lu)\n", hwnd, lp);
 	mwnd.m_hwnd = hwnd;
 	{
 		RECT r1{}, r2{};
@@ -567,6 +585,7 @@ void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
 }
 void pdfv::MainWindow::wOnCopydata(LPARAM lp) noexcept
 {
+	DEBUGPRINT("pdfv::MainWindow::wOnCopyData(%lu)\n", lp);
 	auto receive = reinterpret_cast<const COPYDATASTRUCT *>(lp);
 	if (receive != nullptr && receive->dwData > 0)
 	{
@@ -582,6 +601,7 @@ void pdfv::MainWindow::wOnCopydata(LPARAM lp) noexcept
 }
 void pdfv::MainWindow::wOnBringToFront() noexcept
 {
+	DEBUGPRINT("pdfv::MainWindow::wOnBringToFront()\n");
 	auto wnd = this->m_hwnd;
 	::ShowWindow(wnd, SW_RESTORE);
 	HWND curWnd = ::GetForegroundWindow();
@@ -629,6 +649,7 @@ LRESULT CALLBACK pdfv::MainWindow::aboutProc(HWND hwnd, UINT uMsg, WPARAM wp, LP
 
 void pdfv::MainWindow::openPdfFile(std::wstring_view file) noexcept
 {
+	DEBUGPRINT("pdfv::MainWindow::openPdfFile(%p)\n", file.data());
 	std::wstring_view fshort;
 	for (std::size_t i = file.length() - 1; i > 0; --i)
 	{

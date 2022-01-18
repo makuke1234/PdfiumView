@@ -30,9 +30,13 @@
 
 #ifdef _DEBUG
 	#include <cstdio>
-	#define DEBUGPRINT(...) std::printf(##__VA_ARGS__)
+	#define DEBUGPRINT(...) std::printf(__VA_ARGS__)
+
+	#define DEBUGFUNCTION(f) f()
 #else
 	#define DEBUGPRINT(...)
+	
+	#define DEBUGFUNCTION(f)
 #endif
 
 namespace pdfv

@@ -16,7 +16,7 @@ namespace pdfv
 		std::size_t m_fpagenum{};
 		std::size_t m_numPages{};
 		
-		std::unique_ptr<std::uint8_t> m_buf{};
+		std::unique_ptr<std::uint8_t> m_buf{ nullptr };
 
 	public:
 		Pdfium() noexcept;

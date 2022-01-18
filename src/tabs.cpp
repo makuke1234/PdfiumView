@@ -17,12 +17,14 @@ namespace pdfv
 		TabProcInfo(pdfv::Pdfium * l) noexcept
 			: pdf(l)
 		{
+			DEBUGPRINT("pdfv::TabProcInfo::TabProcInfo(%p)\n", l);
 		}
 	};
 	static std::unordered_map<HWND, pdfv::TabProcInfo> info;
 
 	[[nodiscard]] static inline HWND createTabobjectHWND(const HWND hwnd, const HINSTANCE hInst) noexcept
 	{
+		DEBUGPRINT("pdfv::createTabobjectHWND(%p, %p)\n", hwnd, hInst);
 		RECT r{};
 		::GetClientRect(hwnd, &r);
 		return ::CreateWindowExW(
@@ -44,12 +46,14 @@ namespace pdfv
 
 pdfv::TabObject::TabObject(HWND tabshwnd, HINSTANCE hInst) noexcept
 {
+	DEBUGPRINT("pdfv::TabObject::TabObject(%p, %p)\n", tabshwnd, hInst);
 	this->tabhandle = pdfv::createTabobjectHWND(tabshwnd, hInst);
 	pdfv::info[this->tabhandle] = TabProcInfo(this->second.get());
 }
 pdfv::TabObject::TabObject(HWND tabshwnd, HINSTANCE hInst, std::wstring_view V1, pdfv::Pdfium && V2)
 	: first(V1), second(new Pdfium(std::move(V2)))
 {
+	DEBUGPRINT("pdfv::TabObject::TabObject(%p, %p, %p, %p)\n", tabshwnd, hInst, V1.data(), &V2);
 	this->first    += pdfv::Tabs::padding;
 	this->tabhandle = pdfv::createTabobjectHWND(tabshwnd, hInst);
 	pdfv::info[this->tabhandle] = TabProcInfo(this->second.get());
@@ -57,6 +61,7 @@ pdfv::TabObject::TabObject(HWND tabshwnd, HINSTANCE hInst, std::wstring_view V1,
 pdfv::TabObject::TabObject(HWND tabshwnd, HINSTANCE hInst, std::wstring && V1, pdfv::Pdfium && V2) noexcept
 	: first(std::move(V1)), second(new Pdfium(std::move(V2)))
 {
+	DEBUGPRINT("pdfv::TabObject::TabObject(%p, %p, %p, %p)\n", tabshwnd, hInst, V1.c_str(), &V2);
 	this->first    += pdfv::Tabs::padding;
 	this->tabhandle = pdfv::createTabobjectHWND(tabshwnd, hInst);
 	pdfv::info[this->tabhandle] = TabProcInfo(this->second.get());
@@ -66,11 +71,13 @@ pdfv::TabObject::TabObject(TabObject && other) noexcept
 	closeButton(other.closeButton), tabhandle(other.tabhandle),
 	handles(std::move(other.handles))
 {
+	DEBUGPRINT("pdfv::TabObject(TabObject && %p)\n", &other);
 	other.closeButton = nullptr;
 	other.tabhandle   = nullptr;
 }
 pdfv::TabObject & pdfv::TabObject::operator=(TabObject && other) noexcept
 {
+	DEBUGPRINT("pdfv::TabObject::operator=(%p)\n", &other);
 	this->~TabObject();
 
 	this->first       = std::move(other.first);
@@ -86,6 +93,7 @@ pdfv::TabObject & pdfv::TabObject::operator=(TabObject && other) noexcept
 }
 pdfv::TabObject::~TabObject() noexcept
 {
+	DEBUGPRINT("pdfv::TabObject::~TabObject()\n");
 	if (this->tabhandle != nullptr)
 	{
 		::DestroyWindow(this->tabhandle);
@@ -102,6 +110,7 @@ pdfv::TabObject::~TabObject() noexcept
 
 void pdfv::TabObject::insert(HWND handle)
 {
+	DEBUGPRINT("pdfv::TabObject::insert(%p)\n", handle);
 	auto p = ::GetParent(handle);
 	if (p != this->tabhandle)
 	{
