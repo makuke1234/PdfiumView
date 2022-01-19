@@ -19,6 +19,7 @@
 #include <memory>
 #include <functional>
 
+#include "concepts.hpp"
 #include "errors.hpp"
 #include "version.hpp"
 #include "resource.hpp"
@@ -78,6 +79,12 @@ namespace pdfv
 
 		constexpr auto getClientRect = getCliR;
 		constexpr auto getWindowRect = getWinR;
+
+		[[nodiscard]] std::wstring getWinText(HWND hwnd, const std::wstring & def = {});
+
+		constexpr auto getWindowText = getWinText;
+
+		void setFont(HWND hwnd, HFONT hfont, bool redraw = false) noexcept;
 	}
 
 	extern std::function<void(wchar_t **)> getArgsFree;
@@ -89,7 +96,7 @@ namespace pdfv
 	//	Data structure that represents x and y coordinate pair of a point
 	//	Provides some modern operator overloading
 	//
-	template<class T = int>
+	template<typename T = int>
 	struct xy
 	{
 		T x{}, y{};
@@ -97,6 +104,20 @@ namespace pdfv
 		xy() noexcept = default;
 		constexpr xy(T x_, T y_) noexcept
 			: x(x_), y(y_)
+		{
+		}
+		constexpr xy(const RECT & r) noexcept requires std::is_constructible_v<T, decltype(RECT().left)>
+			: x(T(r.right - r.left)), y(T(r.bottom - r.top))
+		{
+		}
+		template<typename U>
+		constexpr xy(const xy<U> & other) noexcept requires std::is_convertible_v<U, T> && concepts::floating_or_integral<T, U>
+			: x(T(other.x)), y(T(other.y))
+		{
+		}
+		template<typename U>
+		explicit constexpr xy(const xy<U> & other) noexcept requires std::is_convertible_v<U, T> && concepts::different_trivial<T, U>
+			: x(static_cast<T>(other.x)), y(static_cast<T>(other.y))
 		{
 		}
 		constexpr xy(const xy & other) noexcept
@@ -338,6 +359,11 @@ namespace pdfv
 			return *this;
 		}
 	};
+
+	[[nodiscard]] xy<decltype(RECT().left)> constexpr make_xy(const RECT & r) noexcept
+	{
+		return r;
+	}
 	
 	extern xy<f> dpi;
 	

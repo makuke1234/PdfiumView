@@ -28,6 +28,27 @@
 	}
 }
 
+[[nodiscard]] std::wstring pdfv::w::getWinText(HWND hwnd, const std::wstring & def)
+{
+	std::wstring str;
+	str.resize(2048, ' ');
+	auto len = ::GetWindowTextW(hwnd, str.data(), str.length() + 1);
+	str.resize(len);
+	if (len > 0) [[likely]]
+	{
+		return str;
+	}
+	else [[unlikely]]
+	{
+		return def;
+	}
+}
+
+void pdfv::w::setFont(HWND hwnd, HFONT hfont, bool redraw) noexcept
+{
+	::SendMessageW(hwnd, WM_SETFONT, reinterpret_cast<WPARAM>(hfont), redraw);
+}
+
 
 std::function<void(wchar_t **)> pdfv::getArgsFree = [](wchar_t ** argVec) noexcept
 {
@@ -64,7 +85,7 @@ std::function<void(wchar_t **)> pdfv::getArgsFree = [](wchar_t ** argVec) noexce
 	}
 }
 
-
+// Forward-declare certain template types for faster compiling when actually used
 template class pdfv::xy<int>;
 template class pdfv::xy<float>;
 

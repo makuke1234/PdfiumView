@@ -539,10 +539,7 @@ void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
 	{
 		auto r1 = w::getCliR(hwnd);
 		auto r2 = w::getWinR(hwnd);
-		mwnd.m_border = {
-			(r2.right  - r2.left) - r1.right,
-			(r2.bottom - r2.top)  - r1.bottom
-		};
+		mwnd.m_border = make_xy(r2) - make_xy(r1);
 		mwnd.m_totalArea = mwnd.m_usableArea + mwnd.m_border;
 		mwnd.m_totalArea.y += mwnd.m_menuSize;
 		mwnd.m_minArea = mwnd.m_totalArea;
@@ -550,23 +547,15 @@ void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
 	}
 	::MoveWindow(
 		hwnd,
-		mwnd.m_pos.x, mwnd.m_pos.y,
+		mwnd.m_pos.x,       mwnd.m_pos.y,
 		mwnd.m_totalArea.x, mwnd.m_totalArea.y,
 		true
 	);
-	{
-		wchar_t temp[2048];
-		auto len = ::GetWindowTextW(hwnd, temp, 2048);
-		mwnd.m_title.assign(temp, len);
-	}
+
+	mwnd.m_title = w::getWinText(hwnd, MainWindow::defaulttitle);
 
 	mwnd.m_tabs = Tabs(hwnd, mwnd.getHinst());
-	::SendMessageW(
-		mwnd.m_tabs.m_tabshwnd,
-		WM_SETFONT,
-		reinterpret_cast<WPARAM>(mwnd.m_defaultFont),
-		false
-	);
+	w::setFont(mwnd.m_tabs.m_tabshwnd, mwnd.m_defaultFont);
 
 	mwnd.m_tabs.insert(Tabs::defaulttitle);
 

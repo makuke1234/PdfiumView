@@ -9,6 +9,9 @@ namespace pdfv
 
 	class MainWindow
 	{
+	public:
+		static inline const std::wstring defaulttitle{ PRODUCT_NAME };
+
 	private:
 		MainWindow() noexcept;
 
