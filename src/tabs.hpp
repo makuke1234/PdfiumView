@@ -54,11 +54,7 @@ namespace pdfv
 		//
 		//	Shows the tab window
 		//
-		void show() const noexcept;
-		//
-		//	Hides the tab window
-		//
-		void hide() const noexcept;
+		void show(bool visible = true) const noexcept;
 		//
 		//	Informs the WndProc of the tab to update it's scrollbars
 		//
@@ -203,6 +199,6 @@ namespace pdfv
 		//
 		void selChange() noexcept;
 
-		
+
 	};
 }

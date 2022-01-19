@@ -150,15 +150,10 @@ void pdfv::TabObject::remove(HWND & handle) noexcept
 	this->handles.erase(handle);
 	handle = nullptr;
 }
-void pdfv::TabObject::show() const noexcept
+void pdfv::TabObject::show(bool visible) const noexcept
 {
 	DEBUGPRINT("pdfv::TabObject::show()\n");
-	::ShowWindow(this->tabhandle, SW_SHOW);
-}
-void pdfv::TabObject::hide() const noexcept
-{
-	DEBUGPRINT("pdfv::TabObject::hide()\n");
-	::ShowWindow(this->tabhandle, SW_HIDE);
+	::ShowWindow(this->tabhandle, visible ? SW_SHOW : SW_HIDE);
 }
 void pdfv::TabObject::updatePDF() const noexcept
 {
@@ -641,7 +636,7 @@ void pdfv::Tabs::selChange() noexcept
 	auto oldidx = this->m_tabindex;
 	this->m_tabindex = TabCtrl_GetCurSel(this->m_tabshwnd);
 	
-	this->m_tabs[oldidx]->hide();
+	this->m_tabs[oldidx]->show(false);
 	this->resize(this->m_size);
 	this->m_tabs[this->m_tabindex]->show();
 }
