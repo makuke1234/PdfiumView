@@ -34,8 +34,11 @@ namespace pdfv
 		pdfv::Tabs m_tabs;
 		pdfv::OpenDialog m_openDialog{ 2048 };
 
+		HBRUSH m_redBrush{ ::CreateSolidBrush(RGB(237, 28, 36)) };
+		HBRUSH m_brightRedBrush{ ::CreateSolidBrush(RGB(255, 128, 128)) };
+		bool m_highlighted{ false };
+
 		friend class OtherWindow;
-		friend int WINAPI ::wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int);
 		static void aboutBox() noexcept;
 		static inline const int s_cAboutBoxSizeX{ 500 };
 		static inline const int s_cAboutBoxSizeY{ 400 };
@@ -103,18 +106,21 @@ namespace pdfv
 		//
 		int message(LPCWSTR message = L"", UINT type = MB_OK) const noexcept;
 		
-	private:
-		static inline constexpr UINT WM_LLMOUSEHOOK = WM_USER + 1;
-		static inline constexpr UINT WM_BRINGTOFRONT = WM_USER + 2;
+		static constexpr UINT WM_LLMOUSEHOOK  = WM_USER;
+		static constexpr UINT WM_BRINGTOFRONT = WM_USER + 1;
+		static constexpr UINT WM_TABMOUSEMOVE = WM_USER + 2;
 		
+	private:
 		//
 		//	The Windows API callback function for the main window "class"
 		//
 		static LRESULT CALLBACK windowProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept;
 		
+		LRESULT wOnDrawItem(DRAWITEMSTRUCT * dis) noexcept;
 		void wOnCommand(WPARAM wp) noexcept;
 		void wOnKeydown(WPARAM wp) noexcept;
 		void wOnMousewheel(WPARAM wp) noexcept;
+		void wOnTabMouseMove(WPARAM wp, LPARAM lp) noexcept;
 		LRESULT wOnNotify(LPARAM lp) noexcept;
 		void wOnMove(LPARAM lp) noexcept;
 		void wOnSizing(WPARAM wp, LPARAM lp) noexcept;

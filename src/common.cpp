@@ -59,6 +59,31 @@ bool pdfv::w::moveWin(HWND hwnd, RECT rect, bool redraw) noexcept
 	) == FALSE ? false : true;
 }
 
+[[nodiscard]] POINT pdfv::w::getCur(POINT def) noexcept
+{
+	POINT p;
+	if (::GetCursorPos(&p)) [[likely]]
+	{
+		return p;
+	}
+	else [[unlikely]]
+	{
+		return def;
+	}
+}
+[[nodiscard]] POINT pdfv::w::getCur(HWND hwnd, POINT def) noexcept
+{
+	POINT p;
+	if (::GetCursorPos(&p) && ::ScreenToClient(hwnd, &p)) [[likely]]
+	{
+		return p;
+	}
+	else [[unlikely]]
+	{
+		return def;
+	}
+}
+
 
 std::function<void(wchar_t **)> pdfv::getArgsFree = [](wchar_t ** argVec) noexcept
 {
@@ -89,10 +114,15 @@ std::function<void(wchar_t **)> pdfv::getArgsFree = [](wchar_t ** argVec) noexce
 		error::lastErr = error::commoncontrols;
 		return false;
 	}
-	else [[likely]]
+
+	iccex.dwICC = ICC_TAB_CLASSES;
+	if (!::InitCommonControlsEx(&iccex)) [[unlikely]]
 	{
-		return true;
+		error::lastErr = error::commoncontrols;
+		return false;
 	}
+
+	return true;
 }
 
 // Forward-declare certain template types for faster compiling when actually used
@@ -202,10 +232,8 @@ namespace pdfv
 				L"static",
 				L"",
 				WS_CHILD | WS_VISIBLE,
-				dip(10 , dpi.x),
-				dip(10 , dpi.y),
-				dip(310, dpi.x),
-				dip(50 , dpi.y),
+				dip(10,  dpi.x), dip(10, dpi.y),
+				dip(310, dpi.x), dip(50, dpi.y),
 				hwnd,
 				nullptr,
 				nullptr,
@@ -216,34 +244,31 @@ namespace pdfv
 				L"edit",
 				L"",
 				WS_CHILD | WS_VISIBLE | WS_TABSTOP,
-				dip(10 , dpi.x),
-				dip(65 , dpi.y),
-				dip(310, dpi.x),
-				dip(22 , dpi.y),
+				dip(10,  dpi.x), dip(65, dpi.y),
+				dip(310, dpi.x), dip(22, dpi.y),
 				hwnd,
 				nullptr,
 				nullptr,
 				nullptr
 			);
-			auto font = reinterpret_cast<WPARAM>(MainWindow::mwnd.getDefaultFont());
-			::SendMessageW(button1   , WM_SETFONT, font, true);
-			::SendMessageW(button2   , WM_SETFONT, font, true);
-			::SendMessageW(messagebox, WM_SETFONT, font, true);
-			::SendMessageW(textbox   , WM_SETFONT, font, true);
+			auto hfont = MainWindow::mwnd.getDefaultFont();
+			w::setFont(button1,    hfont, true);
+			w::setFont(button2,    hfont, true);
+			w::setFont(messagebox, hfont, true);
+			w::setFont(textbox,    hfont, true);
 
 			::SetWindowPos(button1, textbox, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 			::SetWindowPos(button2, button1, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 			::SetWindowPos(textbox, button2, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 
-			RECT r1, r2;
-			::GetClientRect(hwnd, &r1);
-			::GetWindowRect(hwnd, &r2);
+			auto r1 = w::getCliR(hwnd);
+			auto r2 = w::getWinR(hwnd);
 			::MoveWindow(
 				hwnd,
 				r1.left, r1.top,
-				2 * (r2.right - r2.left) - r1.right,
-				2 * (r2.bottom - r2.top) - r1.bottom,
-				true
+				2 * (r2.right  - r2.left) - (r1.right  - r1.left),
+				2 * (r2.bottom - r2.top)  - (r1.bottom - r1.top),
+				TRUE
 			);
 
 			textdata = static_cast<wchar_t *>(reinterpret_cast<CREATESTRUCTW *>(lp)->lpCreateParams);

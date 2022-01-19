@@ -87,6 +87,10 @@ namespace pdfv
 		void setFont(HWND hwnd, HFONT hfont, bool redraw = false) noexcept;
 
 		bool moveWin(HWND hwnd, RECT rect, bool redraw = false) noexcept;
+
+		[[nodiscard]] POINT getCur(POINT def = {}) noexcept;
+		[[nodiscard]] POINT getCur(HWND hwnd, POINT def = {}) noexcept;
+		
 	}
 
 	extern std::function<void(wchar_t **)> getArgsFree;

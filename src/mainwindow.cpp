@@ -94,6 +94,17 @@ pdfv::MainWindow::~MainWindow() noexcept
 		::DeleteObject(this->m_defaultFont);
 		this->m_defaultFont = nullptr;
 	}
+
+	if (this->m_redBrush != nullptr)
+	{
+		::DeleteObject(this->m_redBrush);
+		this->m_redBrush = nullptr;
+	}
+	if (this->m_brightRedBrush != nullptr)
+	{
+		::DeleteObject(this->m_brightRedBrush);
+		this->m_brightRedBrush = nullptr;
+	}
 }
 
 [[nodiscard]] bool pdfv::MainWindow::init(HINSTANCE hinst, int argc, wchar_t ** argv) noexcept
@@ -274,6 +285,8 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 {
 	switch (uMsg)
 	{
+	case WM_DRAWITEM:
+		return mwnd.wOnDrawItem(reinterpret_cast<DRAWITEMSTRUCT *>(lp));
 	case WM_COMMAND:
 		mwnd.wOnCommand(wp);
 		break;
@@ -306,6 +319,9 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 	case WM_COPYDATA:
 		mwnd.wOnCopydata(lp);
 		break;
+	case pdfv::MainWindow::WM_TABMOUSEMOVE:
+		mwnd.wOnTabMouseMove(wp, lp);
+		break;
 	case pdfv::MainWindow::WM_BRINGTOFRONT:
 		mwnd.wOnBringToFront();
 		break;
@@ -316,6 +332,61 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 	return 0;
 }
 
+LRESULT pdfv::MainWindow::wOnDrawItem(DRAWITEMSTRUCT * dis) noexcept
+{
+	DEBUGPRINT("pdfv::MainWindow::wOnDrawItem(%p)\n", static_cast<void *>(dis));
+	if (dis->hwndItem == this->m_tabs.m_tabshwnd)
+	{
+		// Do double-buffering
+		auto w = dis->rcItem.right  - dis->rcItem.left;
+		auto h = dis->rcItem.bottom - dis->rcItem.top;
+
+		auto hdc = ::CreateCompatibleDC(dis->hDC);
+		auto hbmBuf = ::CreateCompatibleBitmap(dis->hDC, dis->rcItem.right, dis->rcItem.bottom);
+		auto hbmOld = ::SelectObject(hdc, hbmBuf);
+
+		::FillRect(hdc, &dis->rcItem, reinterpret_cast<HBRUSH>(COLOR_WINDOW));
+		::SetBkMode(hdc, TRANSPARENT);
+
+		// Currently selected tab
+		auto cursel{ TabCtrl_GetCurSel(dis->hwndItem) };
+
+		if (int(dis->itemID) == cursel)
+		{
+			::SetTextColor(hdc, RGB(0, 0, 0));
+		}
+		else
+		{
+			::SetTextColor(hdc, RGB(127, 127, 127));
+		}
+
+		auto r = dis->rcItem;
+
+		// Draw text
+		::SelectObject(hdc, this->m_defaultFont);
+		const auto & item = this->m_tabs.m_tabs[dis->itemID];
+		::DrawTextW(hdc, item->first.c_str(), item->first.length(), &r, DT_SINGLELINE | DT_VCENTER | DT_CENTER);
+
+
+		// Draw close button last
+		auto closeR{ Tabs::s_calcCloseButton(r) };
+		
+		// Check mouse position
+
+		::FillRect(hdc, &closeR, this->m_highlighted ? this->m_redBrush : this->m_brightRedBrush);
+		
+		// Double-buffering action
+
+		::BitBlt(dis->hDC, dis->rcItem.left, dis->rcItem.top, w, h, hdc, dis->rcItem.left, dis->rcItem.top, SRCCOPY);
+		
+		::SelectObject(hdc, hbmOld);
+		::DeleteObject(hbmBuf);
+		::DeleteDC(hdc);
+
+		return TRUE;
+	}
+	return FALSE;
+}
 void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::onCommand(%u)\n", wp);
@@ -436,8 +507,7 @@ void pdfv::MainWindow::wOnMousewheel(WPARAM wp) noexcept
 
 	if (std::abs(delta) >= WHEEL_DELTA)
 	{
-		POINT p;
-		::GetCursorPos(&p);
+		auto p = w::getCur();
 		auto pt1{ xy<int>{ p.x, p.y } - mwnd.m_pos };
 		auto pt2{ mwnd.m_tabs.m_pos  + mwnd.m_tabs.m_offset };
 		auto sz { mwnd.m_tabs.m_size - mwnd.m_tabs.m_offset };
@@ -455,6 +525,33 @@ void pdfv::MainWindow::wOnMousewheel(WPARAM wp) noexcept
 				);
 		}
 		delta %= ((delta < 0) * -1 + (delta >= 0)) * WHEEL_DELTA;
+	}
+}
+void pdfv::MainWindow::wOnTabMouseMove([[maybe_unused]] WPARAM wp, [[maybe_unused]] LPARAM lp) noexcept
+{
+	DEBUGPRINT("pdfv::MainWindow::wOnTabMouseMove(%u, %u)\n", wp, lp);
+	
+	auto p{ w::getCur(this->m_hwnd) };
+	auto cursel = TabCtrl_GetCurSel(this->m_tabs.m_tabshwnd);
+	RECT r;
+	TabCtrl_GetItemRect(this->m_tabs.m_tabshwnd, cursel, &r);
+	auto closeR = Tabs::s_calcCloseButton(r);
+
+	DEBUGPRINT("cursor coords: %d %d\n", p.x, p.y);
+	DEBUGPRINT("rect coords: %d %d\n", closeR.left, closeR.top);	
+
+	bool mouseHigh{ false };
+	if (p.x >= closeR.left && p.x <= closeR.right &&
+		p.y >= closeR.top  && p.y <= closeR.bottom
+	)
+	{
+		mouseHigh = true;
+	}
+
+	if (mouseHigh != this->m_highlighted)
+	{
+		this->m_highlighted = mouseHigh;
+		::InvalidateRect(this->m_tabs.m_tabshwnd, nullptr, FALSE);
 	}
 }
 LRESULT pdfv::MainWindow::wOnNotify(LPARAM lp) noexcept
@@ -485,7 +582,7 @@ void pdfv::MainWindow::wOnMove(LPARAM lp) noexcept
 void pdfv::MainWindow::wOnSizing(WPARAM wp, LPARAM lp) noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::wOnSizing(%u, %lu)\n", wp, lp);
-	auto r = reinterpret_cast<RECT*>(lp);
+	auto r = reinterpret_cast<RECT *>(lp);
 	if ((r->right - r->left) < mwnd.m_minArea.x)
 	{
 		switch (wp)

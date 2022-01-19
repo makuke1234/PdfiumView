@@ -114,7 +114,7 @@ namespace pdfv
 		//
 		[[nodiscard]] HWND createCloseButton(RECT rect, HMENU menu) const noexcept;
 
-		static inline const xy<int> s_cCloseButtonSz{ 20, 20 };
+		static constexpr xy<int> s_cCloseButtonSz{ 20, 20 };
 
 	public:
 		Tabs() noexcept = default;
@@ -162,6 +162,13 @@ namespace pdfv
 		//	Updates close buttons on screen
 		//
 		void updateCloseButtons() const noexcept;
+		/**
+		 * @brief Calculates the rectangle of tab close button, respective to tabs rectangle
+		 * 
+		 * @param itemRect Tabs rectangle
+		 * @return RECT Calculated rectangle
+		 */
+		[[nodiscard]] static RECT s_calcCloseButton(RECT itemRect) noexcept;
 		//
 		//	Inserts a new tab at a given index to the tab control
 		//	Default index is tabs::endpos

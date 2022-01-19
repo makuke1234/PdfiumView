@@ -196,14 +196,38 @@ LRESULT pdfv::TabObject::tabProc(UINT uMsg, WPARAM wp, LPARAM lp)
 		PAINTSTRUCT ps;
 		auto hdc = ::BeginPaint(this->tabhandle, &ps);
 	
+		// Double-buffering start
+		auto memdc = ::CreateCompatibleDC(hdc);
+		auto hbmbuf = ::CreateCompatibleBitmap(hdc, this->size.x, this->size.y);
+		auto hbmold = ::SelectObject(memdc, hbmbuf);
+
+		// Draw here
+
+		// Draw background
+		RECT r{ .left = 0, .top = 0, .right = this->size.x, .bottom = this->size.y };
+		::FillRect(memdc, &r, reinterpret_cast<HBRUSH>(COLOR_WINDOW));
+
 		if (this->second.pdfExists())
 		{
-			this->second.pageRender(hdc, { 0, 0 }, this->size);
+			this->second.pageRender(memdc, { 0, 0 }, this->size);
 		}
 		
+		// Double-buffering end
+		::BitBlt(hdc, 0, 0, this->size.x, this->size.y, memdc, 0, 0, SRCCOPY);
+		
+		::SelectObject(memdc, hbmold);
+
+		::DeleteObject(hbmbuf);
+		::DeleteDC(memdc);
+
 		::EndPaint(this->tabhandle, &ps);
 		break;
 	}
+	case WM_ERASEBKGND:
+		return TRUE;
+	case WM_MOUSEMOVE:
+		::SendMessageW(::GetParent(this->tabhandle), MainWindow::WM_TABMOUSEMOVE, wp, lp);
+		break;
 	case WM_VSCROLL:
 	{
 		if (this->second.pdfExists())
@@ -331,12 +355,13 @@ LRESULT CALLBACK pdfv::TabObject::closeButtonProc(
 pdfv::Tabs::Tabs(HWND hwnd, HINSTANCE hInst) noexcept
 	: m_parent(hwnd)
 {
+	DEBUGPRINT("pdfv::Tabs::Tabs(%p, %p)\n", static_cast<void *>(hwnd), static_cast<void *>(hInst));
 	auto r = w::getCliR(this->m_parent);
 	this->m_tabshwnd = ::CreateWindowExW(
 		0,
 		WC_TABCONTROL,
 		L"",
-		WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE | WS_TABSTOP,
+		WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE | WS_TABSTOP | TCS_OWNERDRAWFIXED,
 		0,
 		0,
 		r.right  - r.left,
@@ -345,6 +370,21 @@ pdfv::Tabs::Tabs(HWND hwnd, HINSTANCE hInst) noexcept
 		nullptr,
 		hInst,
 		nullptr
+	);
+
+	::SetWindowSubclass(
+		this->m_tabshwnd,
+		[](HWND hwnd, UINT umsg, WPARAM wp, LPARAM lp, UINT_PTR, DWORD_PTR) -> LRESULT CALLBACK
+		{
+			if (umsg == WM_MOUSEMOVE || umsg == MainWindow::WM_TABMOUSEMOVE)
+			{
+				::SendMessageW(::GetParent(hwnd), MainWindow::WM_TABMOUSEMOVE, wp, lp);
+				return TRUE;
+			}
+			return ::DefSubclassProc(hwnd, umsg, wp, lp);
+		},
+		1,
+		0
 	);
 }
 pdfv::Tabs::Tabs(pdfv::Tabs && other) noexcept
@@ -390,7 +430,7 @@ pdfv::Tabs::~Tabs() noexcept
 		0,
 		L"button",
 		L"X",
-		WS_VISIBLE | WS_CLIPSIBLINGS | WS_CHILD,
+		/*WS_VISIBLE | */WS_CLIPSIBLINGS | WS_CHILD,
 		sz.left,
 		sz.top,
 		sz.right  - sz.left,
@@ -405,12 +445,7 @@ pdfv::Tabs::~Tabs() noexcept
 		return nullptr;
 	}
 
-	::SendMessageW(
-		btn,
-		WM_SETFONT,
-		reinterpret_cast<WPARAM>(pdfv::MainWindow::mwnd.getDefaultFont()),
-		true
-	);
+	w::setFont(btn, pdfv::MainWindow::mwnd.getDefaultFont(), true);
 	::SetWindowSubclass(btn, &pdfv::TabObject::closeButtonProc, 1, 0);
 	return btn;
 }
@@ -430,7 +465,7 @@ void pdfv::Tabs::resize(xy<int> newsize) noexcept
 
 	::MoveWindow(
 		this->m_tabshwnd,
-		this->m_pos.x, this->m_pos.y,
+		this->m_pos.x,  this->m_pos.y,
 		this->m_size.x, this->m_size.y,
 		TRUE
 	);
@@ -447,7 +482,7 @@ void pdfv::Tabs::move(xy<int> newpos) noexcept
 }
 void pdfv::Tabs::repaint() const noexcept
 {
-	::InvalidateRect(this->m_tabshwnd, nullptr, true);
+	::InvalidateRect(this->m_tabshwnd, nullptr, TRUE);
 }
 void pdfv::Tabs::moveCloseButtons() const noexcept
 {
@@ -466,12 +501,11 @@ void pdfv::Tabs::moveCloseButton(pdfv::ssize_t index) const noexcept
 
 	RECT r{};
 	TabCtrl_GetItemRect(this->m_tabshwnd, index, &r);
+	r = s_calcCloseButton(r);
 	::MoveWindow(
 		this->m_tabs[index]->closeButton,
-		r.right - dip(s_cCloseButtonSz.x + 2, dpi.x),
-		(r.top + r.bottom) / 2 - dip(s_cCloseButtonSz.y, dpi.y) / 2,
-		dip(s_cCloseButtonSz.x, dpi.x),
-		dip(s_cCloseButtonSz.y, dpi.y),
+		r.left, r.top,
+		r.right - r.left, r.bottom - r.top,
 		FALSE
 	);
 }
@@ -481,6 +515,16 @@ void pdfv::Tabs::updateCloseButtons() const noexcept
 	{
 		::InvalidateRect(i->closeButton, nullptr, TRUE);
 	}
+}
+
+[[nodiscard]] RECT pdfv::Tabs::s_calcCloseButton(RECT itemRect) noexcept
+{
+	RECT r;
+	r.left   = itemRect.right - dip(s_cCloseButtonSz.x + 2, dpi.x);
+	r.top    = (itemRect.top + itemRect.bottom) / 2 - dip(s_cCloseButtonSz.y, dpi.y) / 2;
+	r.right  = r.left + dip(s_cCloseButtonSz.x, dpi.x);
+	r.bottom = r.top  + dip(s_cCloseButtonSz.y, dpi.y);
+	return r;
 }
 
 pdfv::Tabs::listtype::iterator pdfv::Tabs::insert(std::wstring_view title, const pdfv::ssize_t index)
