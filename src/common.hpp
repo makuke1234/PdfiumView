@@ -37,8 +37,8 @@
 
 
 #ifdef _DEBUG
-	#include <cstdio>
-	#define DEBUGPRINT(...) std::printf(__VA_ARGS__)
+	#include "debug.hpp"
+	#define DEBUGPRINT(...) pdfv::debug::printf(__VA_ARGS__)
 
 	#define DEBUGFUNCTION(f) f()
 #else

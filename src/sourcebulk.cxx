@@ -6,3 +6,4 @@
 #include "../src/tabs.cpp"
 #include "../src/opendialog.cpp"
 #include "../src/otherwindow.cpp"
+#include "../src/debug.cpp"
