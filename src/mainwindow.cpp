@@ -522,11 +522,10 @@ void pdfv::MainWindow::wOnSizing(WPARAM wp, LPARAM lp) noexcept
 void pdfv::MainWindow::wOnSize() noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::wOnSize()\n");
-	RECT r{};
-	::GetClientRect(this->m_hwnd, &r);
+	auto r = w::getCliR(this->m_hwnd);
 	this->m_usableArea = { r.right - r.left, r.bottom - r.top };
 
-	::GetWindowRect(this->m_hwnd, &r);
+	r = w::getWinR(this->m_hwnd);
 	this->m_totalArea = { r.right - r.left, r.bottom - r.top };
 	this->m_border = this->m_totalArea - this->m_usableArea;
 	this->m_border.y -= this->m_menuSize;
@@ -538,9 +537,8 @@ void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
 	DEBUGPRINT("pdfv::MainWindow::wOnCreate(%p, %lu)\n", static_cast<void *>(hwnd), lp);
 	mwnd.m_hwnd = hwnd;
 	{
-		RECT r1{}, r2{};
-		::GetClientRect(hwnd, &r1);
-		::GetWindowRect(hwnd, &r2);
+		auto r1 = w::getCliR(hwnd);
+		auto r2 = w::getWinR(hwnd);
 		mwnd.m_border = {
 			(r2.right  - r2.left) - r1.right,
 			(r2.bottom - r2.top)  - r1.bottom

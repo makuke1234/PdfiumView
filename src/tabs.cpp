@@ -8,8 +8,7 @@ namespace pdfv
 	[[nodiscard]] static inline HWND createTabobjectHWND(const HWND hwnd, const HINSTANCE hInst, TabObject * self) noexcept
 	{
 		DEBUGPRINT("pdfv::createTabobjectHWND(%p, %p)\n", static_cast<const void *>(hwnd), static_cast<const void *>(hInst));
-		RECT r{};
-		::GetClientRect(hwnd, &r);
+		auto r = w::getCliR(hwnd);
 		return ::CreateWindowExW(
 			0,
 			APP_CLASSNAME "Tab",
@@ -164,8 +163,7 @@ void pdfv::TabObject::hide() const noexcept
 void pdfv::TabObject::updatePDF() const noexcept
 {
 	DEBUGPRINT("pdfv::TabObject::updatePDF()\n");
-	RECT r{};
-	::GetClientRect(this->tabhandle, &r);
+	auto r = w::getCliR(this->tabhandle);
 	::SendMessageW(this->tabhandle, WM_SIZE, 0, MAKELONG(r.right - r.left, r.bottom - r.top));
 }
 
@@ -262,7 +260,7 @@ LRESULT pdfv::TabObject::tabProc(UINT uMsg, WPARAM wp, LPARAM lp)
 			this->second.pageLoad(this->page + 1);
 			::InvalidateRect(this->tabhandle, nullptr, true);
 
-			SCROLLINFO si;
+			SCROLLINFO si{};
 			si.cbSize = sizeof si;
 			si.fMask  = SIF_POS;
 			si.nPos   = this->page;
@@ -275,8 +273,7 @@ LRESULT pdfv::TabObject::tabProc(UINT uMsg, WPARAM wp, LPARAM lp)
 		break;
 	case WM_SIZE:
 	{
-		RECT r{};
-		::GetClientRect(this->tabhandle, &r);
+		auto r = w::getCliR(this->tabhandle);
 		this->size = { r.right - r.left, r.bottom - r.top };
 
 		if (this->second.pdfExists())
@@ -339,8 +336,7 @@ LRESULT CALLBACK pdfv::TabObject::closeButtonProc(
 pdfv::Tabs::Tabs(HWND hwnd, HINSTANCE hInst) noexcept
 	: m_parent(hwnd)
 {
-	RECT r{};
-	::GetClientRect(this->m_parent, &r);
+	auto r = w::getCliR(this->m_parent);
 	this->m_tabshwnd = ::CreateWindowExW(
 		0,
 		WC_TABCONTROL,
@@ -348,8 +344,8 @@ pdfv::Tabs::Tabs(HWND hwnd, HINSTANCE hInst) noexcept
 		WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE | WS_TABSTOP,
 		0,
 		0,
-		r.right,
-		r.bottom,
+		r.right  - r.left,
+		r.bottom - r.top,
 		this->m_parent,
 		nullptr,
 		hInst,

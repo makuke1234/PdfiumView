@@ -3,6 +3,31 @@
 
 #include <shellapi.h>
 
+[[nodiscard]] RECT pdfv::w::getCliR(HWND hwnd, RECT def) noexcept
+{
+	RECT r;
+	if (::GetClientRect(hwnd, &r)) [[likely]]
+	{
+		return r;
+	}
+	else [[unlikely]]
+	{
+		return def;
+	}
+}
+[[nodiscard]] RECT pdfv::w::getWinR(HWND hwnd, RECT def) noexcept
+{
+	RECT r;
+	if (::GetWindowRect(hwnd, &r)) [[likely]]
+	{
+		return r;
+	}
+	else [[unlikely]]
+	{
+		return def;
+	}
+}
+
 
 std::function<void(wchar_t **)> pdfv::getArgsFree = [](wchar_t ** argVec) noexcept
 {

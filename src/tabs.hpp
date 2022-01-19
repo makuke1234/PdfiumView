@@ -202,5 +202,7 @@ namespace pdfv
 		//	Handles the tab control active tab changes
 		//
 		void selChange() noexcept;
+
+		
 	};
 }

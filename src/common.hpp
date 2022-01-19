@@ -46,6 +46,7 @@
 	#define DEBUGFUNCTION(f)
 #endif
 
+
 namespace pdfv
 {
 	// Some type aliases
@@ -69,6 +70,15 @@ namespace pdfv
 	using u32 = std::uint32_t;
 	using i64 = std::int64_t;
 	using u64 = std::uint64_t;
+	
+	namespace w
+	{
+		[[nodiscard]] RECT getCliR(HWND hwnd, RECT def = {}) noexcept;
+		[[nodiscard]] RECT getWinR(HWND hwnd, RECT def = {}) noexcept;
+
+		constexpr auto getClientRect = getCliR;
+		constexpr auto getWindowRect = getWinR;
+	}
 
 	extern std::function<void(wchar_t **)> getArgsFree;
 	[[nodiscard]] std::unique_ptr<wchar_t *, decltype(pdfv::getArgsFree)> getArgs(LPWSTR cmdLine, int & argc) noexcept;
