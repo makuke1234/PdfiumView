@@ -85,6 +85,8 @@ namespace pdfv
 		constexpr auto getWindowText = getWinText;
 
 		void setFont(HWND hwnd, HFONT hfont, bool redraw = false) noexcept;
+
+		bool moveWin(HWND hwnd, RECT rect, bool redraw = false) noexcept;
 	}
 
 	extern std::function<void(wchar_t **)> getArgsFree;
@@ -106,17 +108,17 @@ namespace pdfv
 			: x(x_), y(y_)
 		{
 		}
-		constexpr xy(const RECT & r) noexcept requires std::is_constructible_v<T, decltype(RECT().left)>
+		constexpr xy(RECT r) noexcept requires std::is_constructible_v<T, decltype(RECT().left)>
 			: x(T(r.right - r.left)), y(T(r.bottom - r.top))
 		{
 		}
 		template<typename U>
-		constexpr xy(const xy<U> & other) noexcept requires std::is_convertible_v<U, T> && concepts::floating_or_integral<T, U>
+		constexpr xy(const xy<U> & other) noexcept requires std::is_convertible_v<U, T> && concepts::integral_or_floating_both<T, U>
 			: x(T(other.x)), y(T(other.y))
 		{
 		}
 		template<typename U>
-		explicit constexpr xy(const xy<U> & other) noexcept requires std::is_convertible_v<U, T> && concepts::different_trivial<T, U>
+		explicit constexpr xy(const xy<U> & other) noexcept requires std::is_convertible_v<U, T> && (!concepts::integral_or_floating_both<T, U>)
 			: x(static_cast<T>(other.x)), y(static_cast<T>(other.y))
 		{
 		}
@@ -360,7 +362,7 @@ namespace pdfv
 		}
 	};
 
-	[[nodiscard]] xy<decltype(RECT().left)> constexpr make_xy(const RECT & r) noexcept
+	[[nodiscard]] constexpr xy<decltype(RECT().left)> make_xy(RECT r) noexcept
 	{
 		return r;
 	}

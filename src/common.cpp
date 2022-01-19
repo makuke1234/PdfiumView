@@ -46,7 +46,17 @@
 
 void pdfv::w::setFont(HWND hwnd, HFONT hfont, bool redraw) noexcept
 {
-	::SendMessageW(hwnd, WM_SETFONT, reinterpret_cast<WPARAM>(hfont), redraw);
+	::SendMessageW(hwnd, WM_SETFONT, reinterpret_cast<WPARAM>(hfont), redraw == false ? FALSE : TRUE);
+}
+
+bool pdfv::w::moveWin(HWND hwnd, RECT rect, bool redraw) noexcept
+{
+	return ::MoveWindow(
+		hwnd,
+		rect.left,              rect.top,
+		rect.right - rect.left, rect.bottom - rect.top,
+		redraw == false ? FALSE : TRUE
+	) == FALSE ? false : true;
 }
 
 

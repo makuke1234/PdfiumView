@@ -540,7 +540,7 @@ void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
 		auto r1 = w::getCliR(hwnd);
 		auto r2 = w::getWinR(hwnd);
 		mwnd.m_border = make_xy(r2) - make_xy(r1);
-		mwnd.m_totalArea = mwnd.m_usableArea + mwnd.m_border;
+		mwnd.m_totalArea    = mwnd.m_usableArea + mwnd.m_border;
 		mwnd.m_totalArea.y += mwnd.m_menuSize;
 		mwnd.m_minArea = mwnd.m_totalArea;
 		mwnd.m_pos = { r2.left, r2.top };
@@ -549,7 +549,7 @@ void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
 		hwnd,
 		mwnd.m_pos.x,       mwnd.m_pos.y,
 		mwnd.m_totalArea.x, mwnd.m_totalArea.y,
-		true
+		TRUE
 	);
 
 	mwnd.m_title = w::getWinText(hwnd, MainWindow::defaulttitle);
