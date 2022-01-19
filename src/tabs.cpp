@@ -5,26 +5,9 @@
 
 namespace pdfv
 {
-	struct TabProcInfo
+	[[nodiscard]] static inline HWND createTabobjectHWND(const HWND hwnd, const HINSTANCE hInst, TabObject * self) noexcept
 	{
-		pdfv::Pdfium * pdf{ nullptr };
-
-		int yMaxScroll{};
-		int yMinScroll{};
-		int page{};
-
-		TabProcInfo() noexcept = default;
-		TabProcInfo(pdfv::Pdfium * l) noexcept
-			: pdf(l)
-		{
-			DEBUGPRINT("pdfv::TabProcInfo::TabProcInfo(%p)\n", l);
-		}
-	};
-	static std::unordered_map<HWND, pdfv::TabProcInfo> info;
-
-	[[nodiscard]] static inline HWND createTabobjectHWND(const HWND hwnd, const HINSTANCE hInst) noexcept
-	{
-		DEBUGPRINT("pdfv::createTabobjectHWND(%p, %p)\n", hwnd, hInst);
+		DEBUGPRINT("pdfv::createTabobjectHWND(%p, %p)\n", static_cast<const void *>(hwnd), static_cast<const void *>(hInst));
 		RECT r{};
 		::GetClientRect(hwnd, &r);
 		return ::CreateWindowExW(
@@ -39,55 +22,61 @@ namespace pdfv
 			hwnd,
 			nullptr,
 			hInst,
-			nullptr
+			self
 		);
 	}
 }
 
 pdfv::TabObject::TabObject(HWND tabshwnd, HINSTANCE hInst) noexcept
+	: parent(tabshwnd)
 {
-	DEBUGPRINT("pdfv::TabObject::TabObject(%p, %p)\n", tabshwnd, hInst);
-	this->tabhandle = pdfv::createTabobjectHWND(tabshwnd, hInst);
-	pdfv::info[this->tabhandle] = TabProcInfo(this->second.get());
+	DEBUGPRINT("pdfv::TabObject::TabObject(%p, %p)\n", static_cast<void *>(tabshwnd), static_cast<void *>(hInst));
+	this->tabhandle = pdfv::createTabobjectHWND(this->parent, hInst, this);
 }
 pdfv::TabObject::TabObject(HWND tabshwnd, HINSTANCE hInst, std::wstring_view V1, pdfv::Pdfium && V2)
-	: first(V1), second(new Pdfium(std::move(V2)))
+	: first(V1), second(std::move(V2)), parent(tabshwnd)
 {
-	DEBUGPRINT("pdfv::TabObject::TabObject(%p, %p, %p, %p)\n", tabshwnd, hInst, V1.data(), &V2);
+	DEBUGPRINT("pdfv::TabObject::TabObject(%p, %p, %p, %p)\n", static_cast<void *>(tabshwnd), static_cast<void *>(hInst), static_cast<const void *>(V1.data()), static_cast<void *>(&V2));
 	this->first    += pdfv::Tabs::padding;
-	this->tabhandle = pdfv::createTabobjectHWND(tabshwnd, hInst);
-	pdfv::info[this->tabhandle] = TabProcInfo(this->second.get());
+	this->tabhandle = pdfv::createTabobjectHWND(this->parent, hInst, this);
 }
 pdfv::TabObject::TabObject(HWND tabshwnd, HINSTANCE hInst, std::wstring && V1, pdfv::Pdfium && V2) noexcept
-	: first(std::move(V1)), second(new Pdfium(std::move(V2)))
+	: first(std::move(V1)), second(std::move(V2)), parent(tabshwnd)
 {
-	DEBUGPRINT("pdfv::TabObject::TabObject(%p, %p, %p, %p)\n", tabshwnd, hInst, V1.c_str(), &V2);
+	DEBUGPRINT("pdfv::TabObject::TabObject(%p, %p, %p, %p)\n", static_cast<void *>(tabshwnd), static_cast<void *>(hInst), static_cast<const void *>(V1.c_str()), static_cast<void *>(&V2));
 	this->first    += pdfv::Tabs::padding;
-	this->tabhandle = pdfv::createTabobjectHWND(tabshwnd, hInst);
-	pdfv::info[this->tabhandle] = TabProcInfo(this->second.get());
+	this->tabhandle = pdfv::createTabobjectHWND(this->parent, hInst, this);
 }
 pdfv::TabObject::TabObject(TabObject && other) noexcept
 	: first(std::move(other.first)), second(std::move(other.second)),
-	closeButton(other.closeButton), tabhandle(other.tabhandle),
-	handles(std::move(other.handles))
+	closeButton(other.closeButton), tabhandle(other.tabhandle), parent(other.parent),
+	size(std::move(other.size)), yMaxScroll(other.yMaxScroll), yMinScroll(other.yMinScroll),
+	page(other.page), handles(std::move(other.handles))
 {
-	DEBUGPRINT("pdfv::TabObject(TabObject && %p)\n", &other);
+	DEBUGPRINT("pdfv::TabObject(TabObject && %p)\n", static_cast<void *>(&other));
 	other.closeButton = nullptr;
 	other.tabhandle   = nullptr;
+	other.parent      = nullptr;
 }
 pdfv::TabObject & pdfv::TabObject::operator=(TabObject && other) noexcept
 {
-	DEBUGPRINT("pdfv::TabObject::operator=(%p)\n", &other);
+	DEBUGPRINT("pdfv::TabObject::operator=(%p)\n", static_cast<void *>(&other));
 	this->~TabObject();
 
 	this->first       = std::move(other.first);
 	this->second      = std::move(other.second);
 	this->closeButton = other.closeButton;
 	this->tabhandle   = other.tabhandle;
+	this->parent      = other.parent;
+	this->size        = std::move(other.size);
+	this->yMaxScroll  = other.yMaxScroll;
+	this->yMinScroll  = other.yMinScroll;
+	this->page        = other.page;
 	this->handles     = std::move(other.handles);
 
 	other.closeButton = nullptr;
 	other.tabhandle   = nullptr;
+	other.parent      = nullptr;
 
 	return *this;
 }
@@ -97,7 +86,6 @@ pdfv::TabObject::~TabObject() noexcept
 	if (this->tabhandle != nullptr)
 	{
 		::DestroyWindow(this->tabhandle);
-		info.erase(this->tabhandle);
 		this->tabhandle = nullptr;
 	}
 	if (this->closeButton != nullptr)
@@ -106,11 +94,12 @@ pdfv::TabObject::~TabObject() noexcept
 		::DestroyWindow(this->closeButton);
 		this->closeButton = nullptr;
 	}
+	this->parent = nullptr;
 }
 
 void pdfv::TabObject::insert(HWND handle)
 {
-	DEBUGPRINT("pdfv::TabObject::insert(%p)\n", handle);
+	DEBUGPRINT("pdfv::TabObject::insert(%p)\n", static_cast<void *>(handle));
 	auto p = ::GetParent(handle);
 	if (p != this->tabhandle)
 	{
@@ -129,6 +118,17 @@ const HWND & pdfv::TabObject::insert(
 	HINSTANCE hinst
 )
 {
+	DEBUGPRINT(
+		"pdfv::TabObject::insert(%lu, %p, %p, %lu, %p, %p, %p, %p)\n",
+		dwExStyle,
+		static_cast<const void *>(className.data()),
+		static_cast<const void *>(windowName.data()),
+		dwStyle,
+		static_cast<const void *>(&pos),
+		static_cast<const void *>(&size),
+		static_cast<void *>(menu),
+		static_cast<void *>(hinst)
+	);
 	return *(this->handles.emplace(::CreateWindowExW(
 		dwExStyle,
 		className.data(),
@@ -146,59 +146,74 @@ const HWND & pdfv::TabObject::insert(
 }
 void pdfv::TabObject::remove(HWND & handle) noexcept
 {
+	DEBUGPRINT("pdfv::TabObject::remove(%p)\n", static_cast<void *>(handle));
 	::DestroyWindow(handle);
 	this->handles.erase(handle);
 	handle = nullptr;
 }
 void pdfv::TabObject::show() const noexcept
 {
+	DEBUGPRINT("pdfv::TabObject::show()\n");
 	::ShowWindow(this->tabhandle, SW_SHOW);
 }
 void pdfv::TabObject::hide() const noexcept
 {
+	DEBUGPRINT("pdfv::TabObject::hide()\n");
 	::ShowWindow(this->tabhandle, SW_HIDE);
 }
 void pdfv::TabObject::updatePDF() const noexcept
 {
+	DEBUGPRINT("pdfv::TabObject::updatePDF()\n");
 	RECT r{};
 	::GetClientRect(this->tabhandle, &r);
 	::SendMessageW(this->tabhandle, WM_SIZE, 0, MAKELONG(r.right - r.left, r.bottom - r.top));
 }
 
-LRESULT CALLBACK pdfv::TabObject::tabProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp)
+LRESULT CALLBACK pdfv::TabObject::tabProcHub(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp)
 {
-	static HWND parent{};
-	static pdfv::xy<int> sz;
+	TabObject * self;
+	if (uMsg == WM_CREATE) [[unlikely]]
+	{
+		auto cs = reinterpret_cast<CREATESTRUCTW *>(lp);
+		self = static_cast<TabObject *>(cs->lpCreateParams);
+		self->tabhandle = hwnd;
+		::SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(self));
+	}
+	else [[likely]]
+	{
+		self = reinterpret_cast<TabObject *>(::GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+	}
 
+	if (self != nullptr) [[likely]]
+	{
+		return self->tabProc(uMsg, wp, lp);
+	}
+	else [[unlikely]]
+	{
+		return ::DefWindowProcW(hwnd, uMsg, wp, lp);
+	}
+}
+
+LRESULT pdfv::TabObject::tabProc(UINT uMsg, WPARAM wp, LPARAM lp)
+{
 	switch (uMsg)
 	{
 	case WM_PAINT:
 	{
 		PAINTSTRUCT ps;
-		auto hdc = ::BeginPaint(hwnd, &ps);
-		
-		if (auto it = info.find(hwnd); it != info.end())
+		auto hdc = ::BeginPaint(this->tabhandle, &ps);
+	
+		if (this->second.pdfExists())
 		{
-			auto & p = it->second;
-			if (p.pdf != nullptr && p.pdf->pdfExists())
-			{
-				p.pdf->pageRender(hdc, { 0, 0 }, sz);
-			}
+			this->second.pageRender(hdc, { 0, 0 }, this->size);
 		}
-
-		::EndPaint(hwnd, &ps);
+		
+		::EndPaint(this->tabhandle, &ps);
 		break;
 	}
 	case WM_VSCROLL:
 	{
-		auto it = info.find(hwnd);
-		if (it == info.end())
-		{
-			break;
-		}
-
-		auto & p = it->second;
-		if (p.pdf != nullptr && p.pdf->pdfExists())
+		if (this->second.pdfExists())
 		{
 			int yNewPos;
 
@@ -206,17 +221,17 @@ LRESULT CALLBACK pdfv::TabObject::tabProc(const HWND hwnd, const UINT uMsg, WPAR
 			{
 			case SB_PAGEUP:
 			case SB_LINEUP:
-				yNewPos = p.page - 1;
+				yNewPos = this->page - 1;
 				break;
 			case SB_PAGEDOWN:
 			case SB_LINEDOWN:
-				yNewPos = p.page + 1;
+				yNewPos = this->page + 1;
 				break;
 			case SB_TOP:
 				yNewPos = 0;
 				break;
 			case SB_BOTTOM:
-				yNewPos = p.yMaxScroll;
+				yNewPos = this->yMaxScroll;
 				break;
 			case SB_THUMBPOSITION:
 				yNewPos = HIWORD(wp);
@@ -226,75 +241,65 @@ LRESULT CALLBACK pdfv::TabObject::tabProc(const HWND hwnd, const UINT uMsg, WPAR
 				SCROLLINFO si{};
 				si.cbSize = sizeof si;
 				si.fMask  = SIF_TRACKPOS;
-				::GetScrollInfo(hwnd, SB_VERT, &si);
+				::GetScrollInfo(this->tabhandle, SB_VERT, &si);
 
 				yNewPos = si.nTrackPos;
 				break;
 			}
 			default:
-				yNewPos = p.page;
+				yNewPos = this->page;
 			}
 			yNewPos = std::max(0, yNewPos);
-			yNewPos = std::min(p.yMaxScroll, yNewPos);
+			yNewPos = std::min(this->yMaxScroll, yNewPos);
 
-			if (yNewPos == p.page)
+			if (yNewPos == this->page)
 			{
 				break;
 			}
 
-			p.page = yNewPos;
+			this->page = yNewPos;
 
-			p.pdf->pageLoad(p.page + 1);
-			::InvalidateRect(hwnd, nullptr, true);
+			this->second.pageLoad(this->page + 1);
+			::InvalidateRect(this->tabhandle, nullptr, true);
 
 			SCROLLINFO si;
 			si.cbSize = sizeof si;
-			si.fMask = SIF_POS;
-			si.nPos = p.page;
-			::SetScrollInfo(hwnd, SB_VERT, &si, true);
+			si.fMask  = SIF_POS;
+			si.nPos   = this->page;
+			::SetScrollInfo(this->tabhandle, SB_VERT, &si, true);
 		}
 		break;
 	}
 	case WM_COMMAND:
-		::SendMessageW(parent, WM_COMMAND, wp, lp);
+		::SendMessageW(this->parent, WM_COMMAND, wp, lp);
 		break;
 	case WM_SIZE:
 	{
 		RECT r{};
-		::GetClientRect(hwnd, &r);
-		sz = { r.right - r.left, r.bottom - r.top };
+		::GetClientRect(this->tabhandle, &r);
+		this->size = { r.right - r.left, r.bottom - r.top };
 
-		auto it = info.find(hwnd);
-		if (it == info.end())
+		if (this->second.pdfExists())
 		{
-			break;
-		}
-
-		auto & p = it->second;
-		if (p.pdf != nullptr && p.pdf->pdfExists())
-		{
-			p.yMaxScroll = p.pdf->pageGetCount() - 1;
-			p.page = std::min(int(p.pdf->pageGetNum()) - 1, p.yMaxScroll);
+			this->yMaxScroll = this->second.pageGetCount() - 1;
+			this->page = std::min(int(this->second.pageGetNum() - 1), this->yMaxScroll);
 
 			SCROLLINFO si{};
 			si.cbSize = sizeof si;
 			si.fMask  = SIF_RANGE | SIF_PAGE | SIF_POS;
-			si.nMin   = p.yMinScroll;
-			si.nMax   = p.yMaxScroll;
+			si.nMin   = this->yMinScroll;
+			si.nMax   = this->yMaxScroll;
 			si.nPage  = 1;
-			si.nPos   = p.page;
-			::SetScrollInfo(hwnd, SB_VERT, &si, TRUE);
+			si.nPos   = this->page;
+			::SetScrollInfo(this->tabhandle, SB_VERT, &si, TRUE);
 		}
 		break;
 	}
 	case WM_CLOSE:
-		::DestroyWindow(hwnd);
-		break;
-	case WM_CREATE:
-		parent = ::GetParent(hwnd);
+		this->~TabObject();
 		break;
 	default:
-		return ::DefWindowProcW(hwnd, uMsg, wp, lp);
+		return ::DefWindowProcW(this->tabhandle, uMsg, wp, lp);
 	}
 
 	return 0;
@@ -331,10 +336,6 @@ LRESULT CALLBACK pdfv::TabObject::closeButtonProc(
 	return ::DefSubclassProc(hwnd, uMsg, wp, lp);
 }
 
-pdfv::Tabs::Tabs() noexcept
-{
-	pdfv::Pdfium::init();
-}
 pdfv::Tabs::Tabs(HWND hwnd, HINSTANCE hInst) noexcept
 	: m_parent(hwnd)
 {
@@ -357,8 +358,8 @@ pdfv::Tabs::Tabs(HWND hwnd, HINSTANCE hInst) noexcept
 }
 pdfv::Tabs::Tabs(pdfv::Tabs && other) noexcept
 	: m_parent(other.m_parent), m_tabshwnd(other.m_tabshwnd), m_pos(std::move(other.m_pos)),
-	m_size(std::move(other.m_size)), m_tabs(std::move(other.m_tabs)),
-	m_tabindex(other.m_tabindex)
+	m_size(std::move(other.m_size)), m_offset(std::move(other.m_offset)),
+	m_tabs(std::move(other.m_tabs)), m_tabindex(other.m_tabindex)
 {
 	other.m_parent   = nullptr;
 	other.m_tabshwnd = nullptr;
@@ -370,6 +371,7 @@ pdfv::Tabs & pdfv::Tabs::operator=(pdfv::Tabs && other) noexcept
 	this->m_tabshwnd = other.m_tabshwnd;
 	this->m_pos      = std::move(other.m_pos);
 	this->m_size     = std::move(other.m_size);
+	this->m_offset   = std::move(other.m_offset);
 	this->m_tabs     = std::move(other.m_tabs);
 	this->m_tabindex = other.m_tabindex;
 
@@ -382,12 +384,13 @@ pdfv::Tabs & pdfv::Tabs::operator=(pdfv::Tabs && other) noexcept
 pdfv::Tabs::~Tabs() noexcept
 {
 	this->m_tabs.clear();
-	pdfv::Pdfium::free();
 	if (this->m_tabshwnd != nullptr)
 	{
 		::DestroyWindow(this->m_tabshwnd);
 		this->m_tabshwnd = nullptr;
 	}
+	this->m_parent = nullptr;
+	pdfv::Pdfium::free();
 }
 
 [[nodiscard]] HWND pdfv::Tabs::createCloseButton(RECT sz, HMENU menu) const noexcept
@@ -427,7 +430,7 @@ void pdfv::Tabs::resize(xy<int> newsize) noexcept
 	if (!this->m_tabs.empty())
 	{
 		::MoveWindow(
-			this->m_tabs[this->m_tabindex].tabhandle,
+			this->m_tabs[this->m_tabindex]->tabhandle,
 			this->m_offset.x, this->m_offset.y,
 			this->m_size.x - this->m_offset.x, this->m_size.y - this->m_offset.y,
 			TRUE
@@ -473,7 +476,7 @@ void pdfv::Tabs::moveCloseButton(pdfv::ssize_t index) const noexcept
 	RECT r{};
 	TabCtrl_GetItemRect(this->m_tabshwnd, index, &r);
 	::MoveWindow(
-		this->m_tabs[index].closeButton,
+		this->m_tabs[index]->closeButton,
 		r.right - dip(s_cCloseButtonSz.x + 2, dpi.x),
 		(r.top + r.bottom) / 2 - dip(s_cCloseButtonSz.y, dpi.y) / 2,
 		dip(s_cCloseButtonSz.x, dpi.x),
@@ -485,7 +488,7 @@ void pdfv::Tabs::updateCloseButtons() const noexcept
 {
 	for (const auto & i : this->m_tabs)
 	{
-		::InvalidateRect(i.closeButton, nullptr, TRUE);
+		::InvalidateRect(i->closeButton, nullptr, TRUE);
 	}
 }
 
@@ -499,29 +502,29 @@ pdfv::Tabs::listtype::iterator pdfv::Tabs::insert(std::wstring_view title, const
 	if (index == Tabs::endpos)
 	{
 		// Insert at the end
-		this->m_tabs.emplace_back(this->m_tabshwnd, MainWindow::mwnd.getHinst(), title);
+		this->m_tabs.emplace_back(std::make_unique<TabObject>(this->m_tabshwnd, MainWindow::mwnd.getHinst(), title));
 		ret = this->m_tabs.end();
 		--ret;
-		tie.pszText = const_cast<LPWSTR>(ret->first.c_str());
+		tie.pszText = (*ret)->first.data();
 		TabCtrl_InsertItem(this->m_tabshwnd, this->m_tabs.size() - 1, &tie);
-		ret->closeButton = this->createCloseButton({}, reinterpret_cast<HMENU>(this->m_tabs.size() + IDM_LIMIT - 1));
+		(*ret)->closeButton = this->createCloseButton({}, reinterpret_cast<HMENU>(this->m_tabs.size() + IDM_LIMIT - 1));
 		this->moveCloseButton(Tabs::endpos);
 	}
 	else
 	{
 		ret = this->m_tabs.insert(
-			std::next(this->m_tabs.begin(), index),
-			TabObject(this->m_tabshwnd, MainWindow::mwnd.getHinst(), title)
+			this->m_tabs.begin() + index,
+			std::make_unique<TabObject>(this->m_tabshwnd, MainWindow::mwnd.getHinst(), title)
 		);
-		tie.pszText = const_cast<LPWSTR>(ret->first.c_str());
+		tie.pszText = (*ret)->first.data();
 		TabCtrl_InsertItem(this->m_tabshwnd, index, &tie);
 		// Update indexes
-		ret->closeButton = this->createCloseButton({}, reinterpret_cast<HMENU>(index + IDM_LIMIT));
+		(*ret)->closeButton = this->createCloseButton({}, reinterpret_cast<HMENU>(index + IDM_LIMIT));
 		
 		this->moveCloseButtons();
 		for (std::size_t i = index + 1; i < this->m_tabs.size(); ++i)
 		{
-			::SetWindowLongW(this->m_tabs[i].closeButton, GWL_ID, i + IDM_LIMIT);
+			::SetWindowLongW(this->m_tabs[i]->closeButton, GWL_ID, i + IDM_LIMIT);
 		}
 	}
 	if (!this->m_offset.y)
@@ -536,15 +539,15 @@ void pdfv::Tabs::remove(std::wstring_view title) noexcept
 	std::size_t index = 0;
 	for (auto it = this->m_tabs.begin(); it != this->m_tabs.end(); ++it, ++index)
 	{
-		if (it->first == title)
+		if ((*it)->first == title)
 		{
-			it->~TabObject();
+			(*it)->~TabObject();
 			this->m_tabs.erase(it);
 			TabCtrl_DeleteItem(this->m_tabshwnd, index);
 			moveCloseButtons();
 			for (std::size_t i = index; i < this->m_tabs.size(); ++i)
 			{
-				::SetWindowLongW(this->m_tabs[i].closeButton, GWL_ID, i + IDM_LIMIT);
+				::SetWindowLongW(this->m_tabs[i]->closeButton, GWL_ID, i + IDM_LIMIT);
 			}
 
 			break;
@@ -573,7 +576,7 @@ void pdfv::Tabs::remove(const pdfv::ssize_t index) noexcept
 		
 		for (std::size_t i = index; i < this->m_tabs.size(); ++i)
 		{
-			::SetWindowLongW(this->m_tabs[i].closeButton, GWL_ID, i + IDM_LIMIT);
+			::SetWindowLongW(this->m_tabs[i]->closeButton, GWL_ID, i + IDM_LIMIT);
 		}
 	}
 }
@@ -588,20 +591,23 @@ pdfv::Tabs::listtype::iterator pdfv::Tabs::rename(std::wstring_view title, const
 	if (index == Tabs::endpos)
 	{
 		// Rename the end
-		auto it = std::next(this->m_tabs.end(), -1);
-		it->first.assign(title);
-		it->first += pdfv::Tabs::padding;
-		tie.pszText = const_cast<LPWSTR>(it->first.c_str());
+		auto it = this->m_tabs.end();
+		--it;
+
+		(*it)->first.assign(title);
+		(*it)->first += pdfv::Tabs::padding;
+		tie.pszText = (*it)->first.data();
 		TabCtrl_SetItem(this->m_tabshwnd, this->m_tabs.size() - 1, &tie);
 		moveCloseButton(Tabs::endpos);
 		return it;
 	}
 	else
 	{
-		auto it = std::next(this->m_tabs.begin(), index);
-		it->first.assign(title);
-		it->first += pdfv::Tabs::padding;
-		tie.pszText = const_cast<LPWSTR>(it->first.c_str());
+		auto it = this->m_tabs.begin() + index;
+
+		(*it)->first.assign(title);
+		(*it)->first += pdfv::Tabs::padding;
+		tie.pszText = (*it)->first.data();
 		TabCtrl_SetItem(this->m_tabshwnd, index, &tie);
 		moveCloseButtons();
 		return it;
@@ -611,11 +617,11 @@ pdfv::Tabs::listtype::iterator pdfv::Tabs::rename(std::wstring_view title, const
 {
 	if (index == Tabs::endpos)
 	{
-		return this->m_tabs.back().first;
+		return this->m_tabs.back()->first;
 	}
 	else
 	{
-		return this->m_tabs[index].first;
+		return this->m_tabs[index]->first;
 	}
 }
 void pdfv::Tabs::select(const ssize_t index) noexcept
@@ -639,7 +645,7 @@ void pdfv::Tabs::selChange() noexcept
 	auto oldidx = this->m_tabindex;
 	this->m_tabindex = TabCtrl_GetCurSel(this->m_tabshwnd);
 	
-	this->m_tabs[oldidx].hide();
+	this->m_tabs[oldidx]->hide();
 	this->resize(this->m_size);
-	this->m_tabs[this->m_tabindex].show();
+	this->m_tabs[this->m_tabindex]->show();
 }

@@ -6,13 +6,13 @@
 
 std::function<void(wchar_t **)> pdfv::getArgsFree = [](wchar_t ** argVec) noexcept
 {
-	DEBUGPRINT("pdfv::getArgsFree(%p)\n", argVec);
+	DEBUGPRINT("pdfv::getArgsFree(%p)\n", static_cast<void *>(argVec));
 	::LocalFree(argVec);
 };
 
 [[nodiscard]] std::unique_ptr<wchar_t *, decltype(pdfv::getArgsFree)> pdfv::getArgs(LPWSTR cmdLine, int & argc) noexcept
 {
-	DEBUGPRINT("pdfv::getArgs(%p, %p)\n", cmdLine, &argc);
+	DEBUGPRINT("pdfv::getArgs(%p, %p)\n", static_cast<void *>(cmdLine), static_cast<void *>(&argc));
 	wchar_t ** argv = ::CommandLineToArgvW(cmdLine, &argc);
 	if (argv == nullptr)
 	{
@@ -47,7 +47,7 @@ pdfv::xy<float> pdfv::dpi{ 1.0f, 1.0f };
 
 [[nodiscard]] ATOM pdfv::registerClasses(WNDCLASSEXW & wcex) noexcept
 {
-	DEBUGPRINT("pdfv::RegisterClasses(%p)\n", &wcex);
+	DEBUGPRINT("pdfv::RegisterClasses(%p)\n", static_cast<void *>(&wcex));
 	if (wcex.cbSize == 0)
 	{
 		wcex.cbSize = sizeof(WNDCLASSEXW);
@@ -87,7 +87,6 @@ namespace pdfv
 
 	LRESULT CALLBACK askProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept
 	{
-		DEBUGPRINT("askProc(%p, %u, %lu %lu)\n", hwnd, uMsg, wp, lp);
 		static wchar_t * textdata{};
 		static HWND textbox{}, messagebox{};
 		
@@ -207,7 +206,7 @@ namespace pdfv
 
 [[nodiscard]] std::wstring pdfv::askInfo(std::wstring_view message, std::wstring_view title) noexcept
 {
-	DEBUGPRINT("pdfv::askInfo(%p, %p)\n", message.data(), title.data());
+	DEBUGPRINT("pdfv::askInfo(%p, %p)\n", static_cast<const void *>(message.data()), static_cast<const void *>(title.data()));
 
 	WNDCLASSEXW wc{ MainWindow::mwnd.getWindowClass() };
 	wc.lpfnWndProc   = &pdfv::askProc;
@@ -268,7 +267,7 @@ namespace pdfv
 
 [[nodiscard]] std::wstring pdfv::utf::conv(std::string_view str)
 {
-	DEBUGPRINT("pdfv::utf::conv(string_view %p)\n", str.data());
+	DEBUGPRINT("pdfv::utf::conv(string_view %p)\n", static_cast<const void *>(str.data()));
 	
 	auto len = ::MultiByteToWideChar(
 		CP_UTF8,
@@ -295,7 +294,7 @@ namespace pdfv
 }
 [[nodiscard]] std::string pdfv::utf::conv(std::wstring_view wstr)
 {
-	DEBUGPRINT("pdfv::utf::conv(wstring_view %p)\n", wstr.data());
+	DEBUGPRINT("pdfv::utf::conv(wstring_view %p)\n", static_cast<const void *>(wstr.data()));
 
 	auto len = ::WideCharToMultiByte(
 		CP_UTF8,

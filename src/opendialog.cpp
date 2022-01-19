@@ -13,7 +13,7 @@ pdfv::OpenDialog::OpenDialog(std::size_t bufsize)
 }
 pdfv::OpenDialog::OpenDialog(std::wstring_view defaultName, pdfv::ssize_t bufsize)
 {
-	DEBUGPRINT("pdfv::OpenDialog::OpenDialog(%p, %zd)\n", defaultName.data(), bufsize);
+	DEBUGPRINT("pdfv::OpenDialog::OpenDialog(%p, %zd)\n", static_cast<const void *>(defaultName.data()), bufsize);
 	if (bufsize == -1)
 	{
 		this->m_bufSize = defaultName.length() + 1;
@@ -32,7 +32,7 @@ pdfv::OpenDialog::OpenDialog(std::wstring_view defaultName, pdfv::ssize_t bufsiz
 }
 pdfv::OpenDialog::OpenDialog(wchar_t * && moveDefaultName, pdfv::ssize_t bufsize)
 {
-	DEBUGPRINT("pdfv::OpenDialog(%p, %zd)\n", moveDefaultName, bufsize);
+	DEBUGPRINT("pdfv::OpenDialog(%p, %zd)\n", static_cast<void *>(moveDefaultName), bufsize);
 	this->m_lastName.reset(moveDefaultName);
 	moveDefaultName = nullptr;
 
@@ -51,19 +51,19 @@ pdfv::OpenDialog::OpenDialog(const OpenDialog & other)
 	: m_lastName(new wchar_t[other.m_bufSize]),
 	m_currentName(new wchar_t[other.m_bufSize]), m_bufSize(other.m_bufSize)
 {
-	DEBUGPRINT("pdfv::OpenDialog::OpenDialog(const OpenDialog & %p)\n", &other);
+	DEBUGPRINT("pdfv::OpenDialog::OpenDialog(const OpenDialog & %p)\n", static_cast<const void *>(&other));
 	std::copy(other.m_lastName.get(), other.m_lastName.get() + this->m_bufSize, this->m_lastName.get());
 }
 pdfv::OpenDialog::OpenDialog(OpenDialog && other) noexcept
 	: m_lastName(std::move(other.m_lastName)),
 	m_currentName(std::move(other.m_currentName)), m_bufSize(other.m_bufSize)
 {
-	DEBUGPRINT("pdfv::OpenDialog::OpenDialog(OpenDialog && %p)\n", &other);
+	DEBUGPRINT("pdfv::OpenDialog::OpenDialog(OpenDialog && %p)\n", static_cast<void *>(&other));
 	other.m_bufSize = 0;
 }
 pdfv::OpenDialog & pdfv::OpenDialog::operator=(const OpenDialog & other)
 {
-	DEBUGPRINT("pdfv::OpenDialog::operator=(const OpenDialog & %p)\n", &other);
+	DEBUGPRINT("pdfv::OpenDialog::operator=(const OpenDialog & %p)\n", static_cast<const void *>(&other));
 	this->m_bufSize = other.m_bufSize;
 	this->m_lastName.reset(new wchar_t[this->m_bufSize]);
 	std::copy(other.m_lastName.get(), other.m_lastName.get() + this->m_bufSize, this->m_lastName.get());
@@ -73,7 +73,7 @@ pdfv::OpenDialog & pdfv::OpenDialog::operator=(const OpenDialog & other)
 }
 pdfv::OpenDialog & pdfv::OpenDialog::operator=(OpenDialog && other) noexcept
 {
-	DEBUGPRINT("pdfv::OpenDialog::operator=(OpenDialog && %p)\n", &other);
+	DEBUGPRINT("pdfv::OpenDialog::operator=(OpenDialog && %p)\n", static_cast<void *>(&other));
 	this->m_lastName    = std::move(other.m_lastName);
 	this->m_currentName = std::move(other.m_currentName);
 	this->m_bufSize     = other.m_bufSize;
@@ -85,7 +85,7 @@ pdfv::OpenDialog & pdfv::OpenDialog::operator=(OpenDialog && other) noexcept
 
 [[nodiscard]] bool pdfv::OpenDialog::open(HWND hwnd, std::wstring & output)
 {
-	DEBUGPRINT("pdfv::OpenDialog::open(%p, %p)\n", hwnd, output.c_str());
+	DEBUGPRINT("pdfv::OpenDialog::open(%p, %p)\n", static_cast<void *>(hwnd), static_cast<const void *>(output.c_str()));
 	std::copy(this->m_lastName.get(), this->m_lastName.get() + this->m_bufSize, this->m_currentName.get());
 	
 	OPENFILENAMEW ofn{};
@@ -116,7 +116,7 @@ pdfv::OpenDialog & pdfv::OpenDialog::operator=(OpenDialog && other) noexcept
 
 bool pdfv::OpenDialog::updateName(std::wstring_view newfilename) noexcept
 {
-	DEBUGPRINT("pdfv::OpenDialog::updateName(%p)\n", newfilename.data());
+	DEBUGPRINT("pdfv::OpenDialog::updateName(%p)\n", static_cast<const void *>(newfilename.data()));
 	if (this->m_bufSize <= (newfilename.length() + 1))
 	{
 		std::copy(newfilename.begin(), newfilename.end() + 1, this->m_lastName.get());

@@ -3,6 +3,7 @@
 
 pdfv::OtherWindow::OtherWindow(std::wstring_view fileName) noexcept
 {
+	DEBUGPRINT("pdfv::OtherWindow::OtherWindow(%p)\n", static_cast<const void *>(fileName.data()));
 	this->mtx = ::CreateMutexW(nullptr, FALSE, APP_CLASSNAME);
 	if (::GetLastError() == ERROR_ALREADY_EXISTS)
 	{
@@ -37,6 +38,7 @@ pdfv::OtherWindow::OtherWindow(std::wstring_view fileName) noexcept
 }
 pdfv::OtherWindow::~OtherWindow() noexcept
 {
+	DEBUGPRINT("pdfv::OtherWindow::~OtherWindow()\n");
 	if (this->mtx != nullptr)
 	{
 		::ReleaseMutex(this->mtx);

@@ -51,6 +51,9 @@ void pdfv::MainWindow::aboutBox() noexcept
 pdfv::MainWindow::MainWindow() noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::MainWindow()\n");
+	
+	pdfv::Pdfium::init();
+
 	auto screen = ::GetDC(nullptr);
 	dpi = {
 		f(::GetDeviceCaps(screen, LOGPIXELSX)) / 96.0f,
@@ -95,7 +98,7 @@ pdfv::MainWindow::~MainWindow() noexcept
 
 [[nodiscard]] bool pdfv::MainWindow::init(HINSTANCE hinst, int argc, wchar_t ** argv) noexcept
 {
-	DEBUGPRINT("pdfv::MainWindow::init(%p, %d, %p)\n", hinst, argc, argv);
+	DEBUGPRINT("pdfv::MainWindow::init(%p, %d, %p)\n", static_cast<void *>(hinst), argc, static_cast<void *>(argv));
 	this->m_hInst = hinst;
 	this->m_argc  = argc;
 	this->m_argv  = argv;
@@ -123,7 +126,7 @@ pdfv::MainWindow::~MainWindow() noexcept
 		return false;
 	}
 
-	this->m_wcex.lpfnWndProc   = &pdfv::TabObject::tabProc;
+	this->m_wcex.lpfnWndProc   = &pdfv::TabObject::tabProcHub;
 	this->m_wcex.lpszClassName = APP_CLASSNAME "Tab";
 	this->m_wcex.lpszMenuName  = nullptr;
 	this->m_wcex.hbrBackground = ::CreateSolidBrush(RGB(255, 255, 255));
@@ -149,7 +152,7 @@ pdfv::MainWindow::~MainWindow() noexcept
 
 [[nodiscard]] bool pdfv::MainWindow::run(const wchar_t * fname, int nCmdShow) noexcept
 {
-	DEBUGPRINT("pdfv::MainWindow::run(%p, %d)\n", fname, nCmdShow);
+	DEBUGPRINT("pdfv::MainWindow::run(%p, %d)\n", static_cast<const void *>(fname), nCmdShow);
 	this->m_hwnd = ::CreateWindowExW(
 		0,
 		APP_CLASSNAME,
@@ -251,19 +254,19 @@ void pdfv::MainWindow::enable(bool enable) const noexcept
 }
 void pdfv::MainWindow::setTitle(std::wstring_view newTitle)
 {
-	DEBUGPRINT("pdfv::MainWindow::setTitle(%p)\n", newTitle.data());
+	DEBUGPRINT("pdfv::MainWindow::setTitle(%p)\n", static_cast<const void *>(newTitle.data()));
 	this->m_title = newTitle;
 	::SetWindowTextW(this->m_hwnd, this->m_title.c_str());
 }
 
 int pdfv::MainWindow::message(LPCWSTR message, LPCWSTR msgtitle, UINT type) const noexcept
 {
-	DEBUGPRINT("pdfv::MainWindow::message(%p, %p, %u)\n", message, msgtitle, type);
+	DEBUGPRINT("pdfv::MainWindow::message(%p, %p, %u)\n", static_cast<const void *>(message), static_cast<const void *>(msgtitle), type);
 	return ::MessageBoxW(this->m_hwnd, message, msgtitle, type);
 }
 int pdfv::MainWindow::message(LPCWSTR message, UINT type) const noexcept
 {
-	DEBUGPRINT("pdfv::MainWindow::message(%p, %u)\n", message, type);
+	DEBUGPRINT("pdfv::MainWindow::message(%p, %u)\n", static_cast<const void *>(message), type);
 	return ::MessageBoxW(this->m_hwnd, message, this->m_title.c_str(), type);
 }
 
@@ -315,7 +318,7 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 
 void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 {
-	DEBUGPRINT("pdfv::MainWindow::onCommand(%lu)\n", wp);
+	DEBUGPRINT("pdfv::MainWindow::onCommand(%u)\n", wp);
 	switch (LOWORD(wp))
 	{
 	case IDM_FILE_OPEN:
@@ -341,8 +344,8 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 			else
 			{
 				auto it = this->m_tabs.rename(Tabs::defaulttitle);
-				it->second->pdfUnload();
-				it->updatePDF();
+				(*it)->second.pdfUnload();
+				(*it)->updatePDF();
 			}
 		}
 		break;
@@ -398,8 +401,8 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 				else
 				{
 					auto it = this->m_tabs.rename(Tabs::defaulttitle);
-					it->second->pdfUnload();
-					it->updatePDF();
+					(*it)->second.pdfUnload();
+					(*it)->updatePDF();
 				}
 			}
 		}
@@ -407,8 +410,8 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 }
 void pdfv::MainWindow::wOnKeydown(WPARAM wp) noexcept
 {
-	DEBUGPRINT("pdfv::MainWindow::wOnKeyDown(%lu)\n", wp);
-	auto target{ mwnd.m_tabs.m_tabs[mwnd.m_tabs.m_tabindex].tabhandle };
+	DEBUGPRINT("pdfv::MainWindow::wOnKeyDown(%u)\n", wp);
+	auto target{ mwnd.m_tabs.m_tabs[mwnd.m_tabs.m_tabindex]->tabhandle };
 	switch (wp)
 	{
 	case VK_HOME:
@@ -427,7 +430,7 @@ void pdfv::MainWindow::wOnKeydown(WPARAM wp) noexcept
 }
 void pdfv::MainWindow::wOnMousewheel(WPARAM wp) noexcept
 {
-	DEBUGPRINT("pdfv::MainWindow::wOnMousewheel(%lu)\n", wp);
+	DEBUGPRINT("pdfv::MainWindow::wOnMousewheel(%u)\n", wp);
 	static int delta = 0;
 	delta += int(GET_WHEEL_DELTA_WPARAM(wp));
 
@@ -445,7 +448,7 @@ void pdfv::MainWindow::wOnMousewheel(WPARAM wp) noexcept
 		{
 			for (int i = std::abs(delta); i > 0; i -= WHEEL_DELTA)
 				::SendMessageW(
-					mwnd.m_tabs.m_tabs[mwnd.m_tabs.m_tabindex].tabhandle,
+					mwnd.m_tabs.m_tabs[mwnd.m_tabs.m_tabindex]->tabhandle,
 					WM_VSCROLL,
 					MAKELONG(dir, 0),
 					0
@@ -481,7 +484,7 @@ void pdfv::MainWindow::wOnMove(LPARAM lp) noexcept
 }
 void pdfv::MainWindow::wOnSizing(WPARAM wp, LPARAM lp) noexcept
 {
-	DEBUGPRINT("pdfv::MainWindow::wOnSizing(%lu, %lu)\n", wp, lp);
+	DEBUGPRINT("pdfv::MainWindow::wOnSizing(%u, %lu)\n", wp, lp);
 	auto r = reinterpret_cast<RECT*>(lp);
 	if ((r->right - r->left) < mwnd.m_minArea.x)
 	{
@@ -532,7 +535,7 @@ void pdfv::MainWindow::wOnSize() noexcept
 }
 void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
 {
-	DEBUGPRINT("pdfv::MainWindow::wOnCreate(%p, %lu)\n", hwnd, lp);
+	DEBUGPRINT("pdfv::MainWindow::wOnCreate(%p, %lu)\n", static_cast<void *>(hwnd), lp);
 	mwnd.m_hwnd = hwnd;
 	{
 		RECT r1{}, r2{};
@@ -649,7 +652,7 @@ LRESULT CALLBACK pdfv::MainWindow::aboutProc(HWND hwnd, UINT uMsg, WPARAM wp, LP
 
 void pdfv::MainWindow::openPdfFile(std::wstring_view file) noexcept
 {
-	DEBUGPRINT("pdfv::MainWindow::openPdfFile(%p)\n", file.data());
+	DEBUGPRINT("pdfv::MainWindow::openPdfFile(%p)\n", static_cast<const void *>(file.data()));
 	std::wstring_view fshort;
 	for (std::size_t i = file.length() - 1; i > 0; --i)
 	{
@@ -659,7 +662,7 @@ void pdfv::MainWindow::openPdfFile(std::wstring_view file) noexcept
 			break;
 		}
 	}
-	std::vector<pdfv::TabObject>::iterator it;
+	pdfv::Tabs::listtype::iterator it;
 	if (this->m_tabs.size() == 1 && this->m_tabs.getName() == Tabs::defaulttitlepadded)
 	{
 		it = this->m_tabs.rename(fshort);
@@ -669,8 +672,8 @@ void pdfv::MainWindow::openPdfFile(std::wstring_view file) noexcept
 		it = this->m_tabs.insert(fshort);
 	}
 	
-	it->second->pdfLoad(std::wstring(file));
-	it->updatePDF();
+	(*it)->second.pdfLoad(std::wstring(file));
+	(*it)->updatePDF();
 
 	this->m_tabs.select();
 }

@@ -16,13 +16,13 @@ pdfv::Pdfium::Pdfium(Pdfium && other) noexcept
 	m_fpagenum(other.m_fpagenum), m_numPages(other.m_numPages),
 	m_buf(std::move(other.m_buf))
 {
-	DEBUGPRINT("pdfv::Pdfium::Pdfium(%p)\n", &other);
+	DEBUGPRINT("pdfv::Pdfium::Pdfium(%p)\n", static_cast<void *>(&other));
 	other.m_fdoc  = nullptr;
 	other.m_fpage = nullptr;
 }
 pdfv::Pdfium & pdfv::Pdfium::operator=(Pdfium && other) noexcept
 {
-	DEBUGPRINT("pdfv::Pdfium::operator=(%p)\n", &other);
+	DEBUGPRINT("pdfv::Pdfium::operator=(%p)\n", static_cast<void *>(&other));
 
 	this->m_fdoc     = other.m_fdoc;
 	this->m_fpage    = other.m_fpage;
@@ -57,8 +57,12 @@ void pdfv::Pdfium::init() noexcept
 void pdfv::Pdfium::free() noexcept
 {
 	DEBUGPRINT("pdfv::Pdfium::free()\n");
-	assert(s_libInit == true);
+	if (s_libInit == false)
+	{
+		return;
+	}
 
+	// Free library as usual
 	FPDF_DestroyLibrary();
 	s_libInit = false;
 }
@@ -74,7 +78,7 @@ void pdfv::Pdfium::free() noexcept
 }
 pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(std::string_view path, std::size_t page)
 {
-	DEBUGPRINT("pdfv::Pdfium::pdfLoad(%p, %zu)\n", path.data(), page);
+	DEBUGPRINT("pdfv::Pdfium::pdfLoad(%p, %zu)\n", static_cast<const void *>(path.data()), page);
 	assert(s_libInit == true);
 	this->pdfUnload();
 
@@ -82,7 +86,7 @@ pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(std::string_view path, std::size_t 
 }
 pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(const std::wstring & path, std::size_t page)
 {
-	DEBUGPRINT("pdfv::Pdfium::pdfLoad(%p, %zu)\n", path.c_str(), page);
+	DEBUGPRINT("pdfv::Pdfium::pdfLoad(%p, %zu)\n", static_cast<const void *>(path.c_str()), page);
 	assert(s_libInit == true);
 	this->pdfUnload();
 
@@ -109,7 +113,7 @@ pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(const std::wstring & path, std::siz
 }
 pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(const u8 * data, std::size_t length, std::size_t page)
 {
-	DEBUGPRINT("pdfv::Pdfium::pdfLoad(%p, %zu, %zu)\n", data, length, page);
+	DEBUGPRINT("pdfv::Pdfium::pdfLoad(%p, %zu, %zu)\n", static_cast<const void *>(data), length, page);
 	assert(s_libInit == true);
 	this->pdfUnload();
 
@@ -120,7 +124,7 @@ pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(const u8 * data, std::size_t length
 }
 pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(u8 * && data, std::size_t length, std::size_t page) noexcept
 {
-	DEBUGPRINT("pdfv::Pdfium::pdfLoad(&& %p, %zu, %zu)\n", data, length, page);
+	DEBUGPRINT("pdfv::Pdfium::pdfLoad(&& %p, %zu, %zu)\n", static_cast<void *>(data), length, page);
 	assert(s_libInit == true);
 	this->pdfUnload();
 
@@ -202,7 +206,7 @@ void pdfv::Pdfium::pageUnload() noexcept
 
 pdfv::error::Errorcode pdfv::Pdfium::pageRender(HDC dc, pdfv::xy<int> pos, pdfv::xy<int> size) const noexcept
 {
-	DEBUGPRINT("pdf::Pdfium::pageRender(%p, %p, %p)\n", dc, &pos, &size);
+	DEBUGPRINT("pdf::Pdfium::pageRender(%p, %p, %p)\n", static_cast<void *>(dc), static_cast<void *>(&pos), static_cast<void *>(&size));
 	assert(s_libInit == true);
 
 	if (this->m_fpage != nullptr)

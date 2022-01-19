@@ -16,7 +16,7 @@ namespace pdfv
 	{
 	public:
 		std::wstring first;
-		std::unique_ptr<pdfv::Pdfium> second{ new pdfv::Pdfium() };
+		pdfv::Pdfium second;
 		HWND closeButton{ nullptr };
 
 		TabObject() noexcept = delete;
@@ -66,14 +66,21 @@ namespace pdfv
 
 	private:
 		// Private variables
-		HWND tabhandle{ nullptr };
+		HWND tabhandle{ nullptr }, parent{ nullptr };
+		xy<int> size;
+
+		int yMaxScroll{};
+		int yMinScroll{};
+		int page{};
+
 		std::set<HWND> handles;
 
 		friend class pdfv::Tabs;
 		friend class pdfv::MainWindow;
 
 		friend int WINAPI ::wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int);
-		static LRESULT CALLBACK tabProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp);
+		static LRESULT CALLBACK tabProcHub(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp);
+		LRESULT tabProc(UINT uMsg, WPARAM wp, LPARAM lp);
 		static LRESULT CALLBACK closeButtonProc(
 			HWND hwnd,
 			UINT uMsg,
@@ -87,7 +94,7 @@ namespace pdfv
 	class Tabs
 	{
 	public:
-		static inline const ssize_t endpos{ -1 };
+		static constexpr ssize_t endpos{ -1 };
 		static inline const std::wstring padding{ L"      " };
 		static inline const std::wstring defaulttitle{ L"unopened" };
 		static inline const std::wstring defaulttitlepadded{ defaulttitle + padding };
@@ -99,7 +106,7 @@ namespace pdfv
 		xy<int> m_size;
 		xy<int> m_offset;
 
-		using listtype = std::vector<pdfv::TabObject>;
+		using listtype = std::vector<std::unique_ptr<pdfv::TabObject>>;
 
 		listtype m_tabs;
 		ssize_t m_tabindex{};
@@ -114,7 +121,7 @@ namespace pdfv
 		static inline const xy<int> s_cCloseButtonSz{ 20, 20 };
 
 	public:
-		Tabs() noexcept;
+		Tabs() noexcept = default;
 		//
 		//	Initializes a tab by using parent's HWND and HINSTANCE
 		//
