@@ -3,6 +3,8 @@
 #include "tabs.hpp"
 #include "opendialog.hpp"
 
+#include <atomic>
+
 namespace pdfv
 {
 	class OtherWindow;
@@ -36,7 +38,11 @@ namespace pdfv
 
 		HBRUSH m_redBrush{ ::CreateSolidBrush(RGB(237, 28, 36)) };
 		HBRUSH m_brightRedBrush{ ::CreateSolidBrush(RGB(255, 128, 128)) };
-		bool m_highlighted{ false };
+		std::atomic<bool> m_highlighted{ false };
+		HANDLE m_moveThread{ nullptr };
+		bool m_moveKillSwitch{ false };
+
+		[[nodiscard]] bool intersectsTabClose() const noexcept;
 
 		friend class OtherWindow;
 		static void aboutBox() noexcept;

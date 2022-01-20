@@ -4,6 +4,27 @@
 
 pdfv::MainWindow pdfv::MainWindow::mwnd;
 
+[[nodiscard]] bool pdfv::MainWindow::intersectsTabClose() const noexcept
+{
+	auto p{ w::getCur(this->m_hwnd) };
+
+	for (std::size_t i = 0; i < this->m_tabs.size(); ++i)
+	{
+		RECT r;
+		TabCtrl_GetItemRect(this->m_tabs.m_tabshwnd, i, &r);
+		auto closeR = Tabs::s_calcCloseButton(r);
+
+		if (p.x >= closeR.left && p.x <= closeR.right &&
+			p.y >= closeR.top  && p.y <= closeR.bottom
+		)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void pdfv::MainWindow::aboutBox() noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::aboutBox()\n");
@@ -84,6 +105,15 @@ pdfv::MainWindow::MainWindow() noexcept
 pdfv::MainWindow::~MainWindow() noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::~MainWindow()\n");
+
+	// Kill moving thread
+	if (this->m_moveThread != nullptr)
+	{
+		this->m_moveKillSwitch = true;
+		::WaitForSingleObject(this->m_moveThread, INFINITE);
+		this->m_moveThread = nullptr;
+	}
+
 	if (this->m_hwnd != nullptr)
 	{
 		::DestroyWindow(this->m_hwnd);
@@ -287,6 +317,8 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 	{
 	case WM_DRAWITEM:
 		return mwnd.wOnDrawItem(reinterpret_cast<DRAWITEMSTRUCT *>(lp));
+	case WM_ERASEBKGND:
+		return TRUE;
 	case WM_COMMAND:
 		mwnd.wOnCommand(wp);
 		break;
@@ -319,6 +351,7 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 	case WM_COPYDATA:
 		mwnd.wOnCopydata(lp);
 		break;
+	case WM_MOUSEMOVE:
 	case pdfv::MainWindow::WM_TABMOUSEMOVE:
 		mwnd.wOnTabMouseMove(wp, lp);
 		break;
@@ -401,24 +434,7 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 		break;
 	case IDM_FILE_CLOSETAB:
 		// Close current tab
-		if (this->m_tabs.size() > 1)
-		{
-			this->m_tabs.remove(this->m_tabs.m_tabindex);
-			this->m_tabs.select();
-		}
-		else
-		{
-			if (this->m_tabs.getName() == Tabs::defaulttitlepadded)
-			{
-				this->~MainWindow();
-			}
-			else
-			{
-				auto it = this->m_tabs.rename(Tabs::defaulttitle);
-				(*it)->second.pdfUnload();
-				(*it)->updatePDF();
-			}
-		}
+		::SendMessageW(this->m_hwnd, WM_COMMAND, IDM_LIMIT + this->m_tabs.m_tabindex, 0);
 		break;
 	case IDM_FILE_EXIT:
 		this->~MainWindow();
@@ -531,26 +547,9 @@ void pdfv::MainWindow::wOnTabMouseMove([[maybe_unused]] WPARAM wp, [[maybe_unuse
 {
 	DEBUGPRINT("pdfv::MainWindow::wOnTabMouseMove(%u, %u)\n", wp, lp);
 	
-	auto p{ w::getCur(this->m_hwnd) };
-	auto cursel = TabCtrl_GetCurSel(this->m_tabs.m_tabshwnd);
-	RECT r;
-	TabCtrl_GetItemRect(this->m_tabs.m_tabshwnd, cursel, &r);
-	auto closeR = Tabs::s_calcCloseButton(r);
-
-	DEBUGPRINT("cursor coords: %d %d\n", p.x, p.y);
-	DEBUGPRINT("rect coords: %d %d\n", closeR.left, closeR.top);	
-
-	bool mouseHigh{ false };
-	if (p.x >= closeR.left && p.x <= closeR.right &&
-		p.y >= closeR.top  && p.y <= closeR.bottom
-	)
+	if (auto high = this->intersectsTabClose(); high != this->m_highlighted)
 	{
-		mouseHigh = true;
-	}
-
-	if (mouseHigh != this->m_highlighted)
-	{
-		this->m_highlighted = mouseHigh;
+		this->m_highlighted = high;
 		::InvalidateRect(this->m_tabs.m_tabshwnd, nullptr, FALSE);
 	}
 }
@@ -632,43 +631,71 @@ void pdfv::MainWindow::wOnSize() noexcept
 void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::wOnCreate(%p, %lu)\n", static_cast<void *>(hwnd), lp);
-	mwnd.m_hwnd = hwnd;
+	this->m_hwnd = hwnd;
 	{
 		auto r1 = w::getCliR(hwnd);
 		auto r2 = w::getWinR(hwnd);
-		mwnd.m_border = make_xy(r2) - make_xy(r1);
-		mwnd.m_totalArea    = mwnd.m_usableArea + mwnd.m_border;
-		mwnd.m_totalArea.y += mwnd.m_menuSize;
-		mwnd.m_minArea = mwnd.m_totalArea;
-		mwnd.m_pos = { r2.left, r2.top };
+		this->m_border = make_xy(r2) - make_xy(r1);
+		this->m_totalArea    = this->m_usableArea + this->m_border;
+		this->m_totalArea.y += this->m_menuSize;
+		this->m_minArea = this->m_totalArea;
+		this->m_pos = { r2.left, r2.top };
 	}
 	::MoveWindow(
 		hwnd,
-		mwnd.m_pos.x,       mwnd.m_pos.y,
-		mwnd.m_totalArea.x, mwnd.m_totalArea.y,
+		this->m_pos.x,       this->m_pos.y,
+		this->m_totalArea.x, this->m_totalArea.y,
 		TRUE
 	);
 
-	mwnd.m_title = w::getWinText(hwnd, MainWindow::defaulttitle);
+	this->m_title = w::getWinText(hwnd, MainWindow::defaulttitle);
 
-	mwnd.m_tabs = Tabs(hwnd, mwnd.getHinst());
-	w::setFont(mwnd.m_tabs.m_tabshwnd, mwnd.m_defaultFont);
+	this->m_tabs = Tabs(hwnd, this->getHinst());
+	w::setFont(this->m_tabs.m_tabshwnd, this->m_defaultFont);
 
-	mwnd.m_tabs.insert(Tabs::defaulttitle);
+	this->m_tabs.insert(Tabs::defaulttitle);
 
 	// Open PDF if any
+	const wchar_t * fname{
+		static_cast<wchar_t *>(reinterpret_cast<CREATESTRUCTW *>(lp)->lpCreateParams)
+	};
+	if (fname != nullptr && fname[0] != '\0')
 	{
-		const wchar_t * fname{
-			static_cast<wchar_t *>(reinterpret_cast<CREATESTRUCTW *>(lp)->lpCreateParams)
-		};
-		if (fname != nullptr && fname[0] != '\0')
-		{
-			// Open pdf
-			std::wstring_view fnv(fname);
-			mwnd.openPdfFile(fnv);
-			mwnd.m_openDialog.updateName(fnv);
-		}
+		// Open pdf
+		std::wstring_view fnv(fname);
+		this->openPdfFile(fnv);
+		this->m_openDialog.updateName(fnv);
 	}
+
+	// Create thread to check for highlighting
+	this->m_moveThread = ::CreateThread(
+		nullptr,
+		20 * sizeof(std::size_t),
+		[](LPVOID lpParam) -> DWORD WINAPI
+		{
+			auto self = static_cast<MainWindow *>(lpParam);
+
+			while (!self->m_moveKillSwitch)
+			{
+				if (self->m_highlighted)
+				{
+					if (self->intersectsTabClose() == false && self->m_highlighted)
+					{
+						self->m_highlighted = false;
+						::InvalidateRect(self->m_tabs.getHandle(), nullptr, FALSE);
+					}
+				}
+
+				::Sleep(16);
+			}
+
+			return 0;
+		},
+		this,
+		0,
+		nullptr
+	);
+
 }
 void pdfv::MainWindow::wOnCopydata(LPARAM lp) noexcept
 {
