@@ -38,11 +38,13 @@ namespace pdfv
 
 		HBRUSH m_redBrush{ ::CreateSolidBrush(RGB(237, 28, 36)) };
 		HBRUSH m_brightRedBrush{ ::CreateSolidBrush(RGB(255, 128, 128)) };
+		HBRUSH m_darkRedBrush{ ::CreateSolidBrush(RGB(200, 0, 0)) };
 		std::atomic<bool> m_highlighted{ false };
+		std::atomic<std::size_t> m_highlightedIdx{ 0 };
 		HANDLE m_moveThread{ nullptr };
-		bool m_moveKillSwitch{ false };
+		bool m_moveKillSwitch{ false }, m_closeButtonDown{ false };
 
-		[[nodiscard]] bool intersectsTabClose() const noexcept;
+		[[nodiscard]] bool intersectsTabClose() noexcept;
 
 		friend class OtherWindow;
 		static void aboutBox() noexcept;
@@ -126,6 +128,8 @@ namespace pdfv
 		void wOnCommand(WPARAM wp) noexcept;
 		void wOnKeydown(WPARAM wp) noexcept;
 		void wOnMousewheel(WPARAM wp) noexcept;
+		void wOnLButtonDown(WPARAM wp, LPARAM lp) noexcept;
+		void wOnLButtonUp(WPARAM wp, LPARAM lp) noexcept;
 		void wOnTabMouseMove(WPARAM wp, LPARAM lp) noexcept;
 		LRESULT wOnNotify(LPARAM lp) noexcept;
 		void wOnMove(LPARAM lp) noexcept;

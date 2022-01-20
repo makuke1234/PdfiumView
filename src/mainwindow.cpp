@@ -4,7 +4,7 @@
 
 pdfv::MainWindow pdfv::MainWindow::mwnd;
 
-[[nodiscard]] bool pdfv::MainWindow::intersectsTabClose() const noexcept
+[[nodiscard]] bool pdfv::MainWindow::intersectsTabClose() noexcept
 {
 	auto p{ w::getCur(this->m_hwnd) };
 
@@ -18,6 +18,7 @@ pdfv::MainWindow pdfv::MainWindow::mwnd;
 			p.y >= closeR.top  && p.y <= closeR.bottom
 		)
 		{
+			this->m_highlightedIdx = i;
 			return true;
 		}
 	}
@@ -75,7 +76,7 @@ pdfv::MainWindow::MainWindow() noexcept
 	
 	pdfv::Pdfium::init();
 
-	auto screen = ::GetDC(nullptr);
+	auto screen{ ::GetDC(nullptr) };
 	dpi = {
 		f(::GetDeviceCaps(screen, LOGPIXELSX)) / 96.0f,
 		f(::GetDeviceCaps(screen, LOGPIXELSY)) / 96.0f
@@ -110,7 +111,8 @@ pdfv::MainWindow::~MainWindow() noexcept
 	if (this->m_moveThread != nullptr)
 	{
 		this->m_moveKillSwitch = true;
-		::WaitForSingleObject(this->m_moveThread, INFINITE);
+		::WaitForSingleObject(this->m_moveThread, 1000);
+		::TerminateThread(this->m_moveThread, 0);
 		this->m_moveThread = nullptr;
 	}
 
@@ -134,6 +136,11 @@ pdfv::MainWindow::~MainWindow() noexcept
 	{
 		::DeleteObject(this->m_brightRedBrush);
 		this->m_brightRedBrush = nullptr;
+	}
+	if (this->m_darkRedBrush != nullptr)
+	{
+		::DeleteObject(this->m_darkRedBrush);
+		this->m_darkRedBrush = nullptr;
 	}
 }
 
@@ -328,6 +335,12 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 	case WM_MOUSEWHEEL:
 		mwnd.wOnMousewheel(wp);
 		break;
+	case WM_LBUTTONDOWN:
+		mwnd.wOnLButtonDown(wp, lp);
+		break;
+	case WM_LBUTTONUP:
+		mwnd.wOnLButtonUp(wp, lp);
+		break;
 	case WM_NOTIFY:
 		return mwnd.wOnNotify(lp);
 	case WM_MOVE:
@@ -368,15 +381,16 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 LRESULT pdfv::MainWindow::wOnDrawItem(DRAWITEMSTRUCT * dis) noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::wOnDrawItem(%p)\n", static_cast<void *>(dis));
+	
 	if (dis->hwndItem == this->m_tabs.m_tabshwnd)
 	{
 		// Do double-buffering
-		auto w = dis->rcItem.right  - dis->rcItem.left;
-		auto h = dis->rcItem.bottom - dis->rcItem.top;
+		auto w{ dis->rcItem.right  - dis->rcItem.left };
+		auto h{ dis->rcItem.bottom - dis->rcItem.top  };
 
-		auto hdc = ::CreateCompatibleDC(dis->hDC);
-		auto hbmBuf = ::CreateCompatibleBitmap(dis->hDC, dis->rcItem.right, dis->rcItem.bottom);
-		auto hbmOld = ::SelectObject(hdc, hbmBuf);
+		auto hdc   { ::CreateCompatibleDC(dis->hDC) };
+		auto hbmBuf{ ::CreateCompatibleBitmap(dis->hDC, dis->rcItem.right, dis->rcItem.bottom) };
+		auto hbmOld{ ::SelectObject(hdc, hbmBuf) };
 
 		::FillRect(hdc, &dis->rcItem, reinterpret_cast<HBRUSH>(COLOR_WINDOW));
 		::SetBkMode(hdc, TRANSPARENT);
@@ -393,20 +407,25 @@ LRESULT pdfv::MainWindow::wOnDrawItem(DRAWITEMSTRUCT * dis) noexcept
 			::SetTextColor(hdc, RGB(127, 127, 127));
 		}
 
-		auto r = dis->rcItem;
+		auto r{ dis->rcItem };
 
 		// Draw text
 		::SelectObject(hdc, this->m_defaultFont);
-		const auto & item = this->m_tabs.m_tabs[dis->itemID];
+		const auto & item{ this->m_tabs.m_tabs[dis->itemID] };
 		::DrawTextW(hdc, item->first.c_str(), item->first.length(), &r, DT_SINGLELINE | DT_VCENTER | DT_CENTER);
-
 
 		// Draw close button last
 		auto closeR{ Tabs::s_calcCloseButton(r) };
 		
 		// Check mouse position
 
-		::FillRect(hdc, &closeR, this->m_highlighted ? this->m_redBrush : this->m_brightRedBrush);
+		::FillRect(
+			hdc,
+			&closeR,
+			(this->m_highlighted && (this->m_highlightedIdx == dis->itemID)) ?
+				(this->m_closeButtonDown ? this->m_darkRedBrush : this->m_redBrush) :
+				 this->m_brightRedBrush
+		);
 		
 		// Double-buffering action
 
@@ -423,6 +442,7 @@ LRESULT pdfv::MainWindow::wOnDrawItem(DRAWITEMSTRUCT * dis) noexcept
 void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::onCommand(%u)\n", wp);
+
 	switch (LOWORD(wp))
 	{
 	case IDM_FILE_OPEN:
@@ -542,6 +562,24 @@ void pdfv::MainWindow::wOnMousewheel(WPARAM wp) noexcept
 		}
 		delta %= ((delta < 0) * -1 + (delta >= 0)) * WHEEL_DELTA;
 	}
+}
+void pdfv::MainWindow::wOnLButtonDown([[maybe_unused]] WPARAM wp, [[maybe_unused]] LPARAM lp) noexcept
+{
+	if (this->m_highlighted)
+	{
+		this->m_closeButtonDown = true;
+		::InvalidateRect(this->m_tabs.m_tabshwnd, nullptr, FALSE);
+	}
+}
+void pdfv::MainWindow::wOnLButtonUp([[maybe_unused]] WPARAM wp, [[maybe_unused]] LPARAM lp) noexcept
+{
+	if (this->m_highlighted && this->m_closeButtonDown)
+	{
+		// Click close button
+		::SendMessageW(this->m_hwnd, WM_COMMAND, IDM_LIMIT + this->m_highlightedIdx, 0);
+		::InvalidateRect(this->m_tabs.m_tabshwnd, nullptr, FALSE);
+	}
+	this->m_closeButtonDown = false;
 }
 void pdfv::MainWindow::wOnTabMouseMove([[maybe_unused]] WPARAM wp, [[maybe_unused]] LPARAM lp) noexcept
 {
@@ -684,6 +722,11 @@ void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
 						self->m_highlighted = false;
 						::InvalidateRect(self->m_tabs.getHandle(), nullptr, FALSE);
 					}
+				}
+				else if (self->m_highlighted == false && self->m_closeButtonDown)
+				{
+					self->m_closeButtonDown = false;
+					::InvalidateRect(self->m_tabs.getHandle(), nullptr, FALSE);
 				}
 
 				::Sleep(16);

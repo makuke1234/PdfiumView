@@ -302,6 +302,10 @@ LRESULT pdfv::TabObject::tabProc(UINT uMsg, WPARAM wp, LPARAM lp)
 		}
 		break;
 	}
+	case WM_LBUTTONDOWN:
+	case WM_LBUTTONUP:
+		::SendMessageW(::GetParent(this->tabhandle), uMsg, wp, lp);
+		break;
 	case WM_CLOSE:
 		this->~TabObject();
 		break;
@@ -341,6 +345,11 @@ pdfv::Tabs::Tabs(HWND hwnd, HINSTANCE hInst) noexcept
 				::SendMessageW(::GetParent(hwnd), MainWindow::WM_TABMOUSEMOVE, wp, lp);
 				return TRUE;
 			}
+			else if (umsg == WM_LBUTTONDOWN || umsg == WM_LBUTTONUP)
+			{
+				::SendMessageW(::GetParent(hwnd), umsg, wp, lp);
+			}
+
 			return ::DefSubclassProc(hwnd, umsg, wp, lp);
 		},
 		1,
