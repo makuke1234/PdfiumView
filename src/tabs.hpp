@@ -17,7 +17,6 @@ namespace pdfv
 	public:
 		std::wstring first;
 		pdfv::Pdfium second;
-		HWND closeButton{ nullptr };
 
 		TabObject() noexcept = delete;
 		TabObject(HWND tabshwnd, HINSTANCE hinst) noexcept;
@@ -77,14 +76,6 @@ namespace pdfv
 		friend int WINAPI ::wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int);
 		static LRESULT CALLBACK tabProcHub(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp);
 		LRESULT tabProc(UINT uMsg, WPARAM wp, LPARAM lp);
-		static LRESULT CALLBACK closeButtonProc(
-			HWND hwnd,
-			UINT uMsg,
-			WPARAM wp,
-			LPARAM lp,
-			[[maybe_unused]] UINT_PTR uIdSubClass,
-			[[maybe_unused]] DWORD_PTR dwRefData
-		) noexcept;
 	};
 
 	class Tabs
@@ -108,11 +99,6 @@ namespace pdfv
 		ssize_t m_tabindex{};
 
 		friend class pdfv::MainWindow;
-
-		//
-		//	Creates the close button for the tab with appropriate size
-		//
-		[[nodiscard]] HWND createCloseButton(RECT rect, HMENU menu) const noexcept;
 
 		static constexpr xy<int> s_cCloseButtonSz{ 20, 20 };
 
@@ -148,20 +134,6 @@ namespace pdfv
 		//	Redraws the tab control
 		//
 		void repaint() const noexcept;
-		//
-		//	Moves the close buttons to the appropriate position of the tab
-		//
-		void moveCloseButtons() const noexcept;
-		//
-		//	Moves the close button at the specified index to the appropriate
-		//	position of the tab
-		//	If index is tabs::endpos, moves the last tab's close button
-		//
-		void moveCloseButton(pdfv::ssize_t index) const noexcept;
-		//
-		//	Updates close buttons on screen
-		//
-		void updateCloseButtons() const noexcept;
 		/**
 		 * @brief Calculates the rectangle of tab close button, respective to tabs rectangle
 		 * 
