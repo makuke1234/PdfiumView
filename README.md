@@ -20,6 +20,9 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 
 # Changelog
 
+* 0.3.0
+	* Develop about dialog
+
 * 0.2.0
 	* Refactor codebase
 	* Upgrade PDFium version
