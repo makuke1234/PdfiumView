@@ -129,7 +129,6 @@ namespace pdfv
 				{
 					auto temp{ this->obj };
 					this->obj = nullptr;
-					DEBUGPRINT("DeleteObject(%p)\n", static_cast<void *>(temp));
 					::DeleteObject(temp);
 				}
 			}
