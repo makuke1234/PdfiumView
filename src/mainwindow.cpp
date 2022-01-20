@@ -47,7 +47,7 @@ void pdfv::MainWindow::aboutBox() noexcept
 		nullptr,
 		&finished
 	);
-	if (hwnd != nullptr)
+	if (hwnd != nullptr) [[likely]]
 	{
 		MSG msg{};
 		::ShowWindow(hwnd, SW_SHOW);
@@ -175,7 +175,7 @@ pdfv::MainWindow::~MainWindow() noexcept
 	this->m_wcex.lpszMenuName  = nullptr;
 	this->m_wcex.hbrBackground = ::CreateSolidBrush(RGB(255, 255, 255));
 	
-	if (!registerClasses(this->m_wcex))
+	if (!registerClasses(this->m_wcex)) [[unlikely]]
 	{
 		error::lastErr = error::registertab;
 		return false;
@@ -185,7 +185,7 @@ pdfv::MainWindow::~MainWindow() noexcept
 	this->m_wcex.lpszClassName = APP_CLASSNAME "About";
 	this->m_wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW);
 	
-	if (!registerClasses(this->m_wcex))
+	if (!registerClasses(this->m_wcex)) [[unlikely]]
 	{
 		error::lastErr = error::registerabout;
 		this->m_helpAvailable = false;
@@ -211,20 +211,20 @@ pdfv::MainWindow::~MainWindow() noexcept
 		this->m_hInst,
 		const_cast<wchar_t *>(fname)
 	);
-	if (this->m_hwnd == nullptr)
+	if (this->m_hwnd == nullptr) [[unlikely]]
 	{
 		error::lastErr = error::window;
 		return false;
 	}
 
 	// Add "about" to system menu (menu when caption bar is right-clicked)
-	if (this->m_helpAvailable)
+	if (this->m_helpAvailable) [[likely]]
 	{
 		auto hSysMenu = ::GetSystemMenu(this->m_hwnd, false);
 		::InsertMenuW(hSysMenu, 5, MF_BYPOSITION | MF_SEPARATOR, 0, nullptr);
 		::InsertMenuW(hSysMenu, 6, MF_BYPOSITION, IDM_HELP_ABOUT, L"&About");
 	}
-	else
+	else [[unlikely]]
 	{
 		::EnableMenuItem(::GetMenu(this->m_hwnd), IDM_HELP_ABOUT, MF_DISABLED);
 	}
@@ -760,25 +760,24 @@ void pdfv::MainWindow::wOnCopydata(LPARAM lp) noexcept
 void pdfv::MainWindow::wOnBringToFront() noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::wOnBringToFront()\n");
-	auto wnd = this->m_hwnd;
-	::ShowWindow(wnd, SW_RESTORE);
-	HWND curWnd = ::GetForegroundWindow();
+	::ShowWindow(this->m_hwnd, SW_RESTORE);
+	HWND topWnd{ ::GetForegroundWindow() };
 
-	DWORD dwMyID  = ::GetWindowThreadProcessId(wnd, nullptr);
-	DWORD dwCurID = ::GetWindowThreadProcessId(curWnd, nullptr);
+	DWORD dwMyID{  ::GetWindowThreadProcessId(this->m_hwnd, nullptr) };
+	DWORD dwCurID{ ::GetWindowThreadProcessId(topWnd, nullptr) };
 	::AttachThreadInput(dwCurID, dwMyID, TRUE);
-	::SetWindowPos(wnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
-	::SetWindowPos(wnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
-	::SetForegroundWindow(wnd);
-	::SetFocus(wnd);
-	::SetActiveWindow(wnd);
+	::SetWindowPos(this->m_hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+	::SetWindowPos(this->m_hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
+	::SetForegroundWindow(this->m_hwnd);
+	::SetFocus(this->m_hwnd);
+	::SetActiveWindow(this->m_hwnd);
 	::AttachThreadInput(dwCurID, dwMyID, FALSE);
 }
 
 
 LRESULT CALLBACK pdfv::MainWindow::aboutProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp) noexcept
 {
-	static bool * finished{};
+	static bool * finished{ nullptr };
 
 	switch (uMsg)
 	{
@@ -797,11 +796,16 @@ LRESULT CALLBACK pdfv::MainWindow::aboutProc(HWND hwnd, UINT uMsg, WPARAM wp, LP
 		*finished = true;
 		break;
 	case WM_CREATE:
-		finished = reinterpret_cast<bool*>(reinterpret_cast<CREATESTRUCTW*>(lp)->lpCreateParams);
+		finished = static_cast<bool *>(reinterpret_cast<CREATESTRUCTW *>(lp)->lpCreateParams);
+		if (finished == nullptr) [[unlikely]]
+		{
+			::DestroyWindow(hwnd);
+		}
 		break;
 	default:
 		return ::DefWindowProcW(hwnd, uMsg, wp, lp);
 	}
+
 	return 0;
 }
 
