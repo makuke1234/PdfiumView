@@ -15,13 +15,26 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 
 # Screenshots
 
+## PdfiumView with about dialog open
+
 ![Screen 1](https://github.com/makuke1234/PdfiumView/raw/master/images/screen1.PNG)
+
+## Highlighted tab close button
+
+![Highlighted button](https://github.com/makuke1234/PdfiumView/raw/master/images/screen2.PNG)
+
+## Pressed tab close button
+
+![Pressed button](https://github.com/makuke1234/PdfiumView/raw/master/images/screen3.PNG)
 
 
 # Changelog
 
 * 0.4.0 (planned)
 	* Make about dialog always centered
+		* *About dialog button is also centered*
+	* Make window size less restricted
+	* [ ] More refactoring of codebase
 	* [ ] Add zooming capability
 
 * 0.3.0

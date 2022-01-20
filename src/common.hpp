@@ -24,8 +24,8 @@
 #include "version.hpp"
 #include "resource.hpp"
 
-#define APP_DEFSIZE_X 640
-#define APP_DEFSIZE_Y 480
+#define APP_DEFSIZE_X 350
+#define APP_DEFSIZE_Y 200
 
 #if INTPTR_MAX == INT64_MAX
 #define PTRPRINT "0x%016X"
