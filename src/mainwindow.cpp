@@ -101,6 +101,23 @@ pdfv::MainWindow::MainWindow() noexcept
 		FF_DONTCARE,
 		L"Segoe UI"
 	);
+
+	this->m_defaultFontBold = ::CreateFontW(
+		dip(15, dpi.y),
+		0,
+		0,
+		0,
+		FW_BOLD,
+		false,
+		false,
+		false,
+		DEFAULT_CHARSET,
+		OUT_DEFAULT_PRECIS,
+		CLIP_DEFAULT_PRECIS,
+		DEFAULT_QUALITY,
+		FF_DONTCARE,
+		L"Segoe UI"
+	);
 }
 
 pdfv::MainWindow::~MainWindow() noexcept
@@ -120,27 +137,6 @@ pdfv::MainWindow::~MainWindow() noexcept
 	{
 		::DestroyWindow(this->m_hwnd);
 		this->m_hwnd = nullptr;
-	}
-	if (this->m_defaultFont != nullptr)
-	{
-		::DeleteObject(this->m_defaultFont);
-		this->m_defaultFont = nullptr;
-	}
-
-	if (this->m_redBrush != nullptr)
-	{
-		::DeleteObject(this->m_redBrush);
-		this->m_redBrush = nullptr;
-	}
-	if (this->m_brightRedBrush != nullptr)
-	{
-		::DeleteObject(this->m_brightRedBrush);
-		this->m_brightRedBrush = nullptr;
-	}
-	if (this->m_darkRedBrush != nullptr)
-	{
-		::DeleteObject(this->m_darkRedBrush);
-		this->m_darkRedBrush = nullptr;
 	}
 }
 
@@ -426,6 +422,11 @@ LRESULT pdfv::MainWindow::wOnDrawItem(DRAWITEMSTRUCT * dis) noexcept
 				(this->m_closeButtonDown ? this->m_darkRedBrush : this->m_redBrush) :
 				 this->m_brightRedBrush
 		);
+
+		// Draw text on top of close button
+		::SetTextColor(hdc, RGB(255, 255, 255));
+		::SelectObject(hdc, this->m_defaultFontBold);
+		::DrawTextW(hdc, L"X", 1, &closeR, DT_SINGLELINE | DT_VCENTER | DT_CENTER | DT_NOCLIP);
 		
 		// Double-buffering action
 

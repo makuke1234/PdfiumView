@@ -31,14 +31,14 @@ namespace pdfv
 		HWND m_hwnd{ nullptr };
 		WNDCLASSEXW m_wcex{};
 		std::wstring m_title;
-		HFONT m_defaultFont{ nullptr };
+		w::GDI<HFONT> m_defaultFont{ nullptr }, m_defaultFontBold{ nullptr };
 		bool m_helpAvailable{ true };
 		pdfv::Tabs m_tabs;
 		pdfv::OpenDialog m_openDialog{ 2048 };
 
-		HBRUSH m_redBrush{ ::CreateSolidBrush(RGB(237, 28, 36)) };
-		HBRUSH m_brightRedBrush{ ::CreateSolidBrush(RGB(255, 128, 128)) };
-		HBRUSH m_darkRedBrush{ ::CreateSolidBrush(RGB(200, 0, 0)) };
+		w::GDI<HBRUSH> m_redBrush{ ::CreateSolidBrush(RGB(237, 28, 36)) };
+		w::GDI<HBRUSH> m_brightRedBrush{ ::CreateSolidBrush(RGB(255, 128, 128)) };
+		w::GDI<HBRUSH> m_darkRedBrush{ ::CreateSolidBrush(RGB(200, 0, 0)) };
 		std::atomic<bool> m_highlighted{ false };
 		std::atomic<std::size_t> m_highlightedIdx{ 0 };
 		HANDLE m_moveThread{ nullptr };
@@ -101,6 +101,10 @@ namespace pdfv
 		[[nodiscard]] constexpr const HFONT & getDefaultFont() const noexcept
 		{
 			return this->m_defaultFont;
+		}
+		[[nodiscard]] constexpr const HFONT & getDefaultFontBold() const noexcept
+		{
+			return this->m_defaultFontBold;
 		}
 		
 		//
