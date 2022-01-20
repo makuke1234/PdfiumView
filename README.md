@@ -13,6 +13,11 @@ A small and compact PDF viewer for Windows, written in C++ utilising [PDFium lib
 The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/makuke1234/PdfiumView/releases).
 
 
+# Screenshots
+
+![Screen 1](https://github.com/makuke1234/PdfiumView/raw/master/images/screen1.PNG)
+
+
 # Changelog
 
 * 0.2.0 (planned)
