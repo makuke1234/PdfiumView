@@ -34,7 +34,7 @@ BEGIN
 			VALUE "FileDescription", PRODUCT_NAME
 			VALUE "FileVersion", VERSION_SEQUENCE_STR
 			VALUE "InternalName", "Win32App"
-			VALUE "LegalCopyright", "\xA92021 Maku Maku"
+			VALUE "LegalCopyright", "\xA92021-2022 Maku Maku"
 			VALUE "OriginalFilename", FILE_NAME
 			VALUE "ProductName", PRODUCT_NAME
 			VALUE "ProductVersion", VERSION_SEQUENCE_STR
