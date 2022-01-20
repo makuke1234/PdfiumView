@@ -29,45 +29,14 @@ pdfv::MainWindow pdfv::MainWindow::mwnd;
 void pdfv::MainWindow::aboutBox() noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::aboutBox()\n");
-	mwnd.enable(false);
-	bool finished{ false };
-	auto sz{ dip({ s_cAboutBoxSizeX, s_cAboutBoxSizeY }, dpi) };
-
-	auto hwnd = ::CreateWindowExW(
-		0,
-		APP_CLASSNAME "About",
-		L"About " PRODUCT_NAME,
-		WS_POPUPWINDOW | WS_CAPTION,
-		mwnd.m_pos.x + (mwnd.m_totalArea.x - sz.x) / 2,
-		mwnd.m_pos.y + (mwnd.m_totalArea.y - sz.y) / 2,
-		sz.x,
-		sz.y,
-		mwnd.m_hwnd,
-		nullptr,
-		nullptr,
-		&finished
+	::DialogBoxParamW(
+		this->m_hInst,
+		MAKEINTRESOURCEW(IDD_ABOUTDIALOG),
+		this->m_hwnd,
+		&MainWindow::aboutProc,
+		reinterpret_cast<LPARAM>(this)
 	);
-	if (hwnd != nullptr) [[likely]]
-	{
-		MSG msg{};
-		::ShowWindow(hwnd, SW_SHOW);
-		::UpdateWindow(hwnd);
 
-		while (!finished)
-		{
-			if (::GetMessageW(&msg, nullptr, 0, 0))
-			{
-				if (!::IsDialogMessageW(hwnd, &msg))
-				{
-					::TranslateMessage(&msg);
-					::DispatchMessageW(&msg);
-				}
-			}
-		}
-		::DestroyWindow(hwnd);
-	}
-	mwnd.enable();
-	::BringWindowToTop(mwnd.m_hwnd);
 }
 
 pdfv::MainWindow::MainWindow() noexcept
@@ -179,16 +148,6 @@ pdfv::MainWindow::~MainWindow() noexcept
 	{
 		error::lastErr = error::registertab;
 		return false;
-	}
-
-	this->m_wcex.lpfnWndProc   = &pdfv::MainWindow::aboutProc;
-	this->m_wcex.lpszClassName = APP_CLASSNAME "About";
-	this->m_wcex.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW);
-	
-	if (!registerClasses(this->m_wcex)) [[unlikely]]
-	{
-		error::lastErr = error::registerabout;
-		this->m_helpAvailable = false;
 	}
 
 	return true;
@@ -463,7 +422,7 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 	case IDM_HELP_ABOUT:
 		if (this->m_helpAvailable)
 		{
-			aboutBox();
+			this->aboutBox();
 		}
 		break;
 	case IDC_TABULATE:
@@ -775,9 +734,9 @@ void pdfv::MainWindow::wOnBringToFront() noexcept
 }
 
 
-LRESULT CALLBACK pdfv::MainWindow::aboutProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp) noexcept
+BOOL CALLBACK pdfv::MainWindow::aboutProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp) noexcept
 {
-	static bool * finished{ nullptr };
+	static MainWindow * self{ nullptr };
 
 	switch (uMsg)
 	{
@@ -786,27 +745,23 @@ LRESULT CALLBACK pdfv::MainWindow::aboutProc(HWND hwnd, UINT uMsg, WPARAM wp, LP
 		{
 		case IDOK:
 		case IDCANCEL:
-			::DestroyWindow(hwnd);
-			*finished = true;
-			break;
+			::EndDialog(hwnd, wp);
+			self->m_dlg = nullptr;
+			self = nullptr;
+			return TRUE;
 		}
 		break;
-	case WM_CLOSE:
-		::DestroyWindow(hwnd);
-		*finished = true;
-		break;
-	case WM_CREATE:
-		finished = static_cast<bool *>(reinterpret_cast<CREATESTRUCTW *>(lp)->lpCreateParams);
-		if (finished == nullptr) [[unlikely]]
-		{
-			::DestroyWindow(hwnd);
-		}
-		break;
-	default:
-		return ::DefWindowProcW(hwnd, uMsg, wp, lp);
+	case WM_INITDIALOG:
+		self = reinterpret_cast<MainWindow *>(lp);
+
+		self->m_dlg = hwnd;
+
+		::SetDlgItemTextW(hwnd, IDC_ABOUT_STATIC, self->m_aboutText.c_str());
+
+		return TRUE;
 	}
 
-	return 0;
+	return FALSE;
 }
 
 void pdfv::MainWindow::openPdfFile(std::wstring_view file) noexcept

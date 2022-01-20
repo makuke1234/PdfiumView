@@ -11,7 +11,6 @@ namespace pdfv
 			noerror = success,
 			error,
 			registerclass,
-			registerabout,
 			registertab,
 			commoncontrols,
 			window,

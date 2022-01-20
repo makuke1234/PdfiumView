@@ -28,7 +28,7 @@ namespace pdfv
 		xy<int> m_pos;
 		xy<int> m_border;
 		int m_menuSize{};
-		HWND m_hwnd{ nullptr };
+		HWND m_hwnd{ nullptr }, m_dlg{ nullptr };
 		WNDCLASSEXW m_wcex{};
 		std::wstring m_title;
 		w::GDI<HFONT> m_defaultFont{ nullptr }, m_defaultFontBold{ nullptr };
@@ -47,7 +47,9 @@ namespace pdfv
 		[[nodiscard]] bool intersectsTabClose() noexcept;
 
 		friend class OtherWindow;
-		static void aboutBox() noexcept;
+		void aboutBox() noexcept;
+		std::wstring m_aboutText{ DEFAULT_ABOUT_TEXT };
+
 		static inline const int s_cAboutBoxSizeX{ 500 };
 		static inline const int s_cAboutBoxSizeY{ 400 };
 
@@ -146,7 +148,7 @@ namespace pdfv
 		//
 		//	The Windows API callback function for the Help->About "class"
 		//
-		static LRESULT CALLBACK aboutProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept;
+		static BOOL CALLBACK aboutProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept;
 
 		//
 		//	Handles the opening of PDF documents

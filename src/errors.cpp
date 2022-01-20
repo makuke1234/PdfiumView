@@ -6,7 +6,6 @@ const wchar_t * pdfv::error::errMsgs[pdfv::error::max_error]
 	L"No error.",
 	L"Program reported an error.",
 	L"Error registering application class!",
-	L"Error registering about box class!",
 	L"Error registering tab control class!",
 	L"Error initializing common controls (a.k.a. XP-styles)!",
 	L"Error creating window!",
