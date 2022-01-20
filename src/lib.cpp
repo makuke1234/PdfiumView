@@ -249,7 +249,6 @@ pdfv::error::Errorcode pdfv::Pdfium::pageRender(HDC dc, pdfv::xy<int> pos, pdfv:
 				::SelectObject(memdc, hbmold);
 				::DeleteDC(memdc);
 
-				DEBUGPRINT("HBITMAP = %p (fresh)\n", static_cast<void *>(render));
 				return render;
 			},
 			args
