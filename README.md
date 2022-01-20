@@ -20,6 +20,7 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 	* Upgrade PDFium version
 	* Tabulating using Ctrl+Tab & Ctrl+Shift+Tab
 	* Fix most bugs (hopefully)
+	* Revamped tab close buttons
 	* [ ] More optimised rendering
 
 * 0.1.0
