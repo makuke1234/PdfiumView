@@ -55,7 +55,7 @@ pdfv::MainWindow::MainWindow() noexcept
 	this->m_menuSize = ::GetSystemMetrics(SM_CYMENU);
 	this->m_usableArea = dip({ APP_DEFSIZE_X, APP_DEFSIZE_Y }, dpi);
 	this->m_defaultFont = ::CreateFontW(
-		dip(15, dpi.y),
+		dipfont(9, dpi.y),
 		0,
 		0,
 		0, 
@@ -72,7 +72,7 @@ pdfv::MainWindow::MainWindow() noexcept
 	);
 
 	this->m_defaultFontBold = ::CreateFontW(
-		dip(15, dpi.y),
+		dipfont(9, dpi.y),
 		0,
 		0,
 		0,
@@ -528,7 +528,7 @@ void pdfv::MainWindow::wOnLButtonDown([[maybe_unused]] WPARAM wp, [[maybe_unused
 	if (this->m_highlighted)
 	{
 		this->m_closeButtonDown = true;
-		::InvalidateRect(this->m_tabs.m_tabshwnd, nullptr, FALSE);
+		w::redraw(this->m_tabs.getHandle());
 	}
 }
 void pdfv::MainWindow::wOnLButtonUp([[maybe_unused]] WPARAM wp, [[maybe_unused]] LPARAM lp) noexcept
@@ -536,8 +536,8 @@ void pdfv::MainWindow::wOnLButtonUp([[maybe_unused]] WPARAM wp, [[maybe_unused]]
 	if (this->m_highlighted && this->m_closeButtonDown)
 	{
 		// Click close button
-		::SendMessageW(this->m_hwnd, WM_COMMAND, IDM_LIMIT + this->m_highlightedIdx, 0);
-		::InvalidateRect(this->m_tabs.m_tabshwnd, nullptr, FALSE);
+		::SendMessageW(this->getHwnd(), WM_COMMAND, IDM_LIMIT + this->m_highlightedIdx, 0);
+		w::redraw(this->m_tabs.getHandle());
 	}
 	this->m_closeButtonDown = false;
 }
@@ -548,7 +548,7 @@ void pdfv::MainWindow::wOnTabMouseMove([[maybe_unused]] WPARAM wp, [[maybe_unuse
 	if (auto high = this->intersectsTabClose(); high != this->m_highlighted)
 	{
 		this->m_highlighted = high;
-		::InvalidateRect(this->m_tabs.m_tabshwnd, nullptr, FALSE);
+		w::redraw(this->m_tabs.getHandle());
 	}
 }
 LRESULT pdfv::MainWindow::wOnNotify(LPARAM lp) noexcept
@@ -559,7 +559,7 @@ LRESULT pdfv::MainWindow::wOnNotify(LPARAM lp) noexcept
 	case TCN_KEYDOWN:
 	{
 		auto kd = reinterpret_cast<NMTCKEYDOWN *>(lp);
-		::SendMessageW(this->m_hwnd, WM_KEYDOWN, kd->wVKey, kd->flags);
+		::SendMessageW(this->getHwnd(), WM_KEYDOWN, kd->wVKey, kd->flags);
 		break;
 	}
 	case TCN_SELCHANGING:
@@ -580,35 +580,35 @@ void pdfv::MainWindow::wOnSizing(WPARAM wp, LPARAM lp) noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::wOnSizing(%u, %lu)\n", wp, lp);
 	auto r = reinterpret_cast<RECT *>(lp);
-	if ((r->right - r->left) < mwnd.m_minArea.x)
+	if ((r->right - r->left) < this->m_minArea.x)
 	{
 		switch (wp)
 		{
 		case WMSZ_BOTTOMRIGHT:
 		case WMSZ_RIGHT:
 		case WMSZ_TOPRIGHT:
-			r->right = r->left + mwnd.m_minArea.x;
+			r->right = r->left + this->m_minArea.x;
 			break;
 		case WMSZ_BOTTOMLEFT:
 		case WMSZ_LEFT:
 		case WMSZ_TOPLEFT:
-			r->left = r->right - mwnd.m_minArea.x;
+			r->left = r->right - this->m_minArea.x;
 			break;
 		}
 	}
-	if ((r->bottom - r->top) < mwnd.m_minArea.y)
+	if ((r->bottom - r->top) < this->m_minArea.y)
 	{
 		switch (wp)
 		{
 		case WMSZ_BOTTOM:
 		case WMSZ_BOTTOMLEFT:
 		case WMSZ_BOTTOMRIGHT:
-			r->bottom = r->top + mwnd.m_minArea.y;
+			r->bottom = r->top + this->m_minArea.y;
 			break;
 		case WMSZ_TOP:
 		case WMSZ_TOPLEFT:
 		case WMSZ_TOPRIGHT:
-			r->top = r->bottom - mwnd.m_minArea.y;
+			r->top = r->bottom - this->m_minArea.y;
 			break;
 		}
 	}
@@ -616,11 +616,9 @@ void pdfv::MainWindow::wOnSizing(WPARAM wp, LPARAM lp) noexcept
 void pdfv::MainWindow::wOnSize() noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::wOnSize()\n");
-	auto r = w::getCliR(this->m_hwnd);
-	this->m_usableArea = { r.right - r.left, r.bottom - r.top };
+	this->m_usableArea = w::getCliR(this->getHwnd());
 
-	r = w::getWinR(this->m_hwnd);
-	this->m_totalArea = { r.right - r.left, r.bottom - r.top };
+	this->m_totalArea = w::getWinR(this->getHwnd());
 	this->m_border = this->m_totalArea - this->m_usableArea;
 	this->m_border.y -= this->m_menuSize;
 
@@ -631,32 +629,28 @@ void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
 	DEBUGPRINT("pdfv::MainWindow::wOnCreate(%p, %lu)\n", static_cast<void *>(hwnd), lp);
 	this->m_hwnd = hwnd;
 	{
-		auto r1 = w::getCliR(hwnd);
-		auto r2 = w::getWinR(hwnd);
-		this->m_border = make_xy(r2) - make_xy(r1);
-		this->m_totalArea    = this->m_usableArea + this->m_border;
+		auto winr{ w::getWinR(hwnd) };
+		this->m_border = make_xy(winr) - make_xy(w::getCliR(hwnd));
+		this->m_totalArea = this->m_usableArea + this->m_border;
 		this->m_totalArea.y += this->m_menuSize;
 		this->m_minArea = this->m_totalArea;
-		this->m_pos = { r2.left, r2.top };
+		this->m_pos = { winr.left, winr.top };
+
+		this->m_totalArea = winr;
+		this->m_totalArea.x = std::max(this->m_totalArea.x, this->m_minArea.x);
+		this->m_totalArea.y = std::max(this->m_totalArea.y, this->m_minArea.y);
 	}
-	::MoveWindow(
-		hwnd,
-		this->m_pos.x,       this->m_pos.y,
-		this->m_totalArea.x, this->m_totalArea.y,
-		TRUE
-	);
+	w::resize(hwnd, this->m_totalArea.x, this->m_totalArea.y, true);
 
 	this->m_title = w::getWinText(hwnd, MainWindow::defaulttitle);
 
 	this->m_tabs = Tabs(hwnd, this->getHinst());
-	w::setFont(this->m_tabs.m_tabshwnd, this->m_defaultFont);
+	w::setFont(this->m_tabs.getHandle(), this->getDefFont());
 
 	this->m_tabs.insert(Tabs::defaulttitle);
 
 	// Open PDF if any
-	const wchar_t * fname{
-		static_cast<wchar_t *>(reinterpret_cast<CREATESTRUCTW *>(lp)->lpCreateParams)
-	};
+	const wchar_t * fname{ static_cast<wchar_t *>(reinterpret_cast<CREATESTRUCTW *>(lp)->lpCreateParams) };
 	if (fname != nullptr && fname[0] != '\0')
 	{
 		// Open pdf
@@ -680,13 +674,13 @@ void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
 					if (self->intersectsTabClose() == false && self->m_highlighted)
 					{
 						self->m_highlighted = false;
-						::InvalidateRect(self->m_tabs.getHandle(), nullptr, FALSE);
+						w::redraw(self->m_tabs.getHandle());
 					}
 				}
 				else if (self->m_highlighted == false && self->m_closeButtonDown)
 				{
 					self->m_closeButtonDown = false;
-					::InvalidateRect(self->m_tabs.getHandle(), nullptr, FALSE);
+					w::redraw(self->m_tabs.getHandle());
 				}
 
 				::Sleep(16);
@@ -704,11 +698,11 @@ void pdfv::MainWindow::wOnCopydata(LPARAM lp) noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::wOnCopyData(%lu)\n", lp);
 	auto receive = reinterpret_cast<const COPYDATASTRUCT *>(lp);
-	if (receive != nullptr && receive->dwData > 0)
+	if (receive != nullptr && receive->dwData > 0) [[likely]]
 	{
 		// Open pdf
 		std::wstring_view fnv(static_cast<wchar_t *>(receive->lpData));
-		if (fnv.length() == 0)
+		if (fnv.length() == 0) [[unlikely]]
 		{
 			return;
 		}
@@ -734,7 +728,7 @@ void pdfv::MainWindow::wOnBringToFront() noexcept
 }
 
 
-BOOL CALLBACK pdfv::MainWindow::aboutProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp) noexcept
+INT_PTR CALLBACK pdfv::MainWindow::aboutProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp) noexcept
 {
 	static MainWindow * self{ nullptr };
 
@@ -755,6 +749,17 @@ BOOL CALLBACK pdfv::MainWindow::aboutProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARA
 		self = reinterpret_cast<MainWindow *>(lp);
 
 		self->m_dlg = hwnd;
+
+		// Re-position about box
+		auto r1 = w::getWinR(hwnd);
+		auto r2 = w::getWinR(self->m_hwnd);
+
+		// Move dialog to the center of parent window
+		w::moveWin(
+			hwnd,
+			r2.left + ((r2.right  - r2.left) - (r1.right  - r1.left)) / 2,
+			r2.top  + ((r2.bottom - r2.top)  - (r1.bottom - r1.top)) / 2
+		);
 
 		::SetDlgItemTextW(hwnd, IDC_ABOUT_STATIC, self->m_aboutText.c_str());
 

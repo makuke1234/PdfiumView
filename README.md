@@ -20,6 +20,10 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 
 # Changelog
 
+* 0.4.0 (planned)
+	* Make about dialog always centered
+	* [ ] Add zooming capability
+
 * 0.3.0
 	* Develop about dialog
 

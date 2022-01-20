@@ -46,17 +46,21 @@
 
 void pdfv::w::setFont(HWND hwnd, HFONT hfont, bool redraw) noexcept
 {
-	::SendMessageW(hwnd, WM_SETFONT, reinterpret_cast<WPARAM>(hfont), redraw == false ? FALSE : TRUE);
+	::SendMessageW(hwnd, WM_SETFONT, reinterpret_cast<WPARAM>(hfont), redraw ? TRUE : FALSE);
 }
 
+bool pdfv::w::moveWin(HWND hwnd, int x, int y, bool redraw) noexcept
+{
+	return ::SetWindowPos(hwnd, nullptr, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | (SWP_NOREDRAW * (!redraw))) ? true : false;
+}
 bool pdfv::w::moveWin(HWND hwnd, RECT rect, bool redraw) noexcept
 {
 	return ::MoveWindow(
 		hwnd,
 		rect.left,              rect.top,
 		rect.right - rect.left, rect.bottom - rect.top,
-		redraw == false ? FALSE : TRUE
-	) == FALSE ? false : true;
+		redraw ? TRUE : FALSE
+	) ? true : false;
 }
 
 [[nodiscard]] POINT pdfv::w::getCur(POINT def) noexcept
@@ -82,6 +86,21 @@ bool pdfv::w::moveWin(HWND hwnd, RECT rect, bool redraw) noexcept
 	{
 		return def;
 	}
+}
+
+bool pdfv::w::redraw(HWND hwnd, bool erase) noexcept
+{
+	return ::InvalidateRect(hwnd, nullptr, erase ? TRUE : FALSE) ? true : false; 
+}
+
+bool pdfv::w::reorder(HWND hwnd, HWND hbefore, bool redraw) noexcept
+{
+	return ::SetWindowPos(hwnd, hbefore, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | (SWP_NOREDRAW * (!redraw))) ? true : false;
+}
+
+bool pdfv::w::resize(HWND hwnd, int x, int y, bool redraw) noexcept
+{
+	return ::SetWindowPos(hwnd, nullptr, 0, 0, x, y, SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER | (SWP_NOREDRAW * (!redraw))) ? true : false;
 }
 
 
@@ -173,8 +192,8 @@ namespace pdfv
 
 	LRESULT CALLBACK askProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept
 	{
-		static wchar_t * textdata{};
-		static HWND textbox{}, messagebox{};
+		static wchar_t * textdata{ nullptr };
+		static HWND textbox{ nullptr }, messagebox{ nullptr };
 		
 		switch (uMsg)
 		{
@@ -182,7 +201,7 @@ namespace pdfv
 			switch (wp)
 			{
 			case IDOK:
-				if (textdata != nullptr && textbox != nullptr)
+				if (textdata != nullptr && textbox != nullptr) [[likely]]
 				{
 					::GetWindowTextW(textbox, textdata, 2048);
 				}
@@ -251,25 +270,19 @@ namespace pdfv
 				nullptr,
 				nullptr
 			);
-			auto hfont = MainWindow::mwnd.getDefaultFont();
+			auto hfont{ MainWindow::mwnd.getDefFont() };
 			w::setFont(button1,    hfont, true);
 			w::setFont(button2,    hfont, true);
 			w::setFont(messagebox, hfont, true);
 			w::setFont(textbox,    hfont, true);
 
-			::SetWindowPos(button1, textbox, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-			::SetWindowPos(button2, button1, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-			::SetWindowPos(textbox, button2, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+			w::reorder(button1, textbox);
+			w::reorder(button2, button1);
+			w::reorder(textbox, button2);
 
-			auto r1 = w::getCliR(hwnd);
-			auto r2 = w::getWinR(hwnd);
-			::MoveWindow(
-				hwnd,
-				r1.left, r1.top,
-				2 * (r2.right  - r2.left) - (r1.right  - r1.left),
-				2 * (r2.bottom - r2.top)  - (r1.bottom - r1.top),
-				TRUE
-			);
+			auto s1{ make_xy(w::getCliR(hwnd)) };
+			auto s2{ make_xy(w::getWinR(hwnd)) };
+			w::resize(hwnd, 2 * s2.x - s1.x, 2 * s2.y - s1.y, true);
 
 			textdata = static_cast<wchar_t *>(reinterpret_cast<CREATESTRUCTW *>(lp)->lpCreateParams);
 			break;
@@ -294,14 +307,14 @@ namespace pdfv
 	wc.lpszClassName = L"AskInfoClass";
 	wc.lpszMenuName  = nullptr;
 
-	if (!registerClasses(wc))
+	if (!registerClasses(wc)) [[unlikely]]
 	{
 		return {};
 	}
 	MainWindow::mwnd.enable(false);
 	AskProc_finished = false;
 
-	wchar_t temp[2048] = { 0 };
+	wchar_t temp[2048]{};
 	auto hwnd = ::CreateWindowExW(
 		0,
 		wc.lpszClassName,
@@ -316,7 +329,7 @@ namespace pdfv
 		nullptr,
 		reinterpret_cast<LPVOID>(temp)
 	);
-	if (hwnd == nullptr)
+	if (hwnd == nullptr) [[unlikely]]
 	{
 		MainWindow::mwnd.enable();
 		::UnregisterClassW(wc.lpszClassName, wc.hInstance);
@@ -360,7 +373,7 @@ namespace pdfv
 	);
 
 	std::wstring wstr;
-	wstr.reserve(len);
+	wstr.resize(len, L' ');
 
 	::MultiByteToWideChar(
 		CP_UTF8,
@@ -389,7 +402,7 @@ namespace pdfv
 	);
 
 	std::string str;
-	str.reserve(len);
+	str.resize(len, ' ');
 
 	::WideCharToMultiByte(
 		CP_UTF8,

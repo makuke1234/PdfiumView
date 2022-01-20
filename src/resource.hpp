@@ -18,5 +18,11 @@
 #define IDD_ABOUTDIALOG 201
 #define IDC_ABOUT_STATIC 202
 
+#define ABOUTDLG_WIDTH  250
+#define ABOUTDLG_HEIGHT 150
+#define DLG_MARGIN 7
+
 
 #define ID_CLOSE 40001
+
+

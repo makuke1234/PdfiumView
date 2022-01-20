@@ -27,7 +27,7 @@ namespace pdfv
 		xy<int> m_minArea;
 		xy<int> m_pos;
 		xy<int> m_border;
-		int m_menuSize{};
+		int m_menuSize{ 0 };
 		HWND m_hwnd{ nullptr }, m_dlg{ nullptr };
 		WNDCLASSEXW m_wcex{};
 		std::wstring m_title;
@@ -49,9 +49,6 @@ namespace pdfv
 		friend class OtherWindow;
 		void aboutBox() noexcept;
 		std::wstring m_aboutText{ DEFAULT_ABOUT_TEXT };
-
-		static inline const int s_cAboutBoxSizeX{ 500 };
-		static inline const int s_cAboutBoxSizeY{ 400 };
 
 	public:
 		//
@@ -100,11 +97,11 @@ namespace pdfv
 		{
 			return this->m_border;
 		}
-		[[nodiscard]] constexpr const HFONT & getDefaultFont() const noexcept
+		[[nodiscard]] constexpr const HFONT & getDefFont() const noexcept
 		{
 			return this->m_defaultFont;
 		}
-		[[nodiscard]] constexpr const HFONT & getDefaultFontBold() const noexcept
+		[[nodiscard]] constexpr const HFONT & getDefFontBold() const noexcept
 		{
 			return this->m_defaultFontBold;
 		}
@@ -148,7 +145,7 @@ namespace pdfv
 		//
 		//	The Windows API callback function for the Help->About "class"
 		//
-		static BOOL CALLBACK aboutProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept;
+		static INT_PTR CALLBACK aboutProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept;
 
 		//
 		//	Handles the opening of PDF documents

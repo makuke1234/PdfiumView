@@ -149,8 +149,8 @@ void pdfv::TabObject::show(bool visible) const noexcept
 void pdfv::TabObject::updatePDF() const noexcept
 {
 	DEBUGPRINT("pdfv::TabObject::updatePDF()\n");
-	auto r = w::getCliR(this->tabhandle);
-	::SendMessageW(this->tabhandle, WM_SIZE, 0, MAKELONG(r.right - r.left, r.bottom - r.top));
+	auto sz{ make_xy(w::getCliR(this->tabhandle)) };
+	w::resize(this->tabhandle, sz.x, sz.y);
 }
 
 LRESULT CALLBACK pdfv::TabObject::tabProcHub(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp)
@@ -268,7 +268,7 @@ LRESULT pdfv::TabObject::tabProc(UINT uMsg, WPARAM wp, LPARAM lp)
 			this->page = yNewPos;
 
 			this->second.pageLoad(this->page + 1);
-			::InvalidateRect(this->tabhandle, nullptr, true);
+			w::redraw(this->tabhandle, true);
 
 			SCROLLINFO si{};
 			si.cbSize = sizeof si;
@@ -416,16 +416,11 @@ void pdfv::Tabs::resize(xy<int> newsize) noexcept
 void pdfv::Tabs::move(xy<int> newpos) noexcept
 {
 	this->m_pos = newpos;
-	::MoveWindow(
-		this->m_tabshwnd,
-		this->m_pos.x,  this->m_pos.y,
-		this->m_size.x, this->m_size.y,
-		FALSE
-	);
+	w::moveWin(this->getHandle(), this->m_pos.x, this->m_pos.y);
 }
 void pdfv::Tabs::repaint() const noexcept
 {
-	::InvalidateRect(this->m_tabshwnd, nullptr, TRUE);
+	w::redraw(this->getHandle(), true);
 }
 
 [[nodiscard]] RECT pdfv::Tabs::s_calcCloseButton(RECT itemRect) noexcept

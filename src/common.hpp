@@ -24,8 +24,8 @@
 #include "version.hpp"
 #include "resource.hpp"
 
-#define APP_DEFSIZE_X 350
-#define APP_DEFSIZE_Y 200
+#define APP_DEFSIZE_X 640
+#define APP_DEFSIZE_Y 480
 
 #if INTPTR_MAX == INT64_MAX
 #define PTRPRINT "0x%016X"
@@ -86,10 +86,17 @@ namespace pdfv
 
 		void setFont(HWND hwnd, HFONT hfont, bool redraw = false) noexcept;
 
+		bool moveWin(HWND hwnd, int x, int y, bool redraw = false) noexcept;
 		bool moveWin(HWND hwnd, RECT rect, bool redraw = false) noexcept;
 
 		[[nodiscard]] POINT getCur(POINT def = {}) noexcept;
 		[[nodiscard]] POINT getCur(HWND hwnd, POINT def = {}) noexcept;
+
+		bool redraw(HWND hwnd, bool erase = false) noexcept;
+
+		bool reorder(HWND hwnd, HWND hbefore, bool redraw = false) noexcept;
+		
+		bool resize(HWND hwnd, int x, int y, bool redraw = false) noexcept;
 
 		template<typename T>
 		struct GDI
@@ -454,6 +461,11 @@ namespace pdfv
 			int(f(size.x) * dip.x),
 			int(f(size.y) * dip.y)
 		};
+	}
+
+	[[nodiscard]] constexpr int dipfont(const int size, const f dip) noexcept
+	{
+		return int(-f(size) * dip * 96.0f / 72.0f);
 	}
 
 	//
