@@ -94,19 +94,28 @@ namespace pdfv
 		template<typename T>
 		struct GDI
 		{
-			T obj;
+			T obj{ nullptr };
 
+			GDI() = default;
 			constexpr GDI(const T & value) noexcept
 				: obj(value)
 			{
 			}
-			GDI(const GDI & other) = delete;
+			constexpr GDI(const GDI & other) noexcept
+				: obj(other.obj)
+			{
+			}
 			constexpr GDI(GDI && other) noexcept
 				: obj(other.obj)
 			{
 				other.obj = nullptr;
 			}
-			GDI & operator=(const GDI & other) = delete;
+			GDI & operator=(const GDI & other) noexcept
+			{
+				this->~GDI();
+				this->obj = other.obj;
+				return *this;
+			}
 			GDI & operator=(GDI && other) noexcept
 			{
 				this->~GDI();
@@ -120,6 +129,7 @@ namespace pdfv
 				{
 					auto temp{ this->obj };
 					this->obj = nullptr;
+					DEBUGPRINT("DeleteObject(%p)\n", static_cast<void *>(temp));
 					::DeleteObject(temp);
 				}
 			}
@@ -128,7 +138,7 @@ namespace pdfv
 			{
 				return this->obj;
 			}
-			[[nodiscard]] constexpr operator const T &() const noexcept
+			[[nodiscard]] constexpr operator const T & () const noexcept
 			{
 				return this->obj;
 			}

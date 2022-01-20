@@ -204,7 +204,7 @@ void pdfv::Pdfium::pageUnload() noexcept
 	}
 }
 
-pdfv::error::Errorcode pdfv::Pdfium::pageRender(HDC dc, pdfv::xy<int> pos, pdfv::xy<int> size) const noexcept
+pdfv::error::Errorcode pdfv::Pdfium::pageRender(HDC dc, pdfv::xy<int> pos, pdfv::xy<int> size)
 {
 	DEBUGPRINT("pdf::Pdfium::pageRender(%p, %p, %p)\n", static_cast<void *>(dc), static_cast<void *>(&pos), static_cast<void *>(&size));
 	assert(s_libInit == true);
@@ -222,7 +222,50 @@ pdfv::error::Errorcode pdfv::Pdfium::pageRender(HDC dc, pdfv::xy<int> pos, pdfv:
 		pos  = size - newsize;
 		pos /= 2;
 
-		FPDF_RenderPage(dc, this->m_fpage, pos.x, pos.y, newsize.x, newsize.y, 0, 0);
+		void * args[] = { this, dc, &newsize };
+		this->m_optRenderer.putPage(
+			this->m_fpagenum,
+			pos,
+			newsize,
+			[](void * args) -> hdc::Renderer::RenderT
+			{
+				DEBUGPRINT("render!\n");
+				auto argv = reinterpret_cast<void **>(args);
+
+				auto self = static_cast<Pdfium *>(argv[0]);
+				auto dc   = static_cast<HDC>(argv[1]);
+				auto size = static_cast<xy<int> *>(argv[2]);
+
+				auto memdc = ::CreateCompatibleDC(dc);
+				auto render = ::CreateCompatibleBitmap(dc, size->x, size->y);
+
+				auto hbmold = ::SelectObject(memdc, render);
+
+				RECT r{ .left = 0, .top = 0, .right = size->x, .bottom = size->y };
+				::FillRect(memdc, &r, reinterpret_cast<HBRUSH>(COLOR_WINDOW));
+
+				FPDF_RenderPage(memdc, self->m_fpage, 0, 0, size->x, size->y, 0, 0);
+
+				::SelectObject(memdc, hbmold);
+				::DeleteDC(memdc);
+
+				DEBUGPRINT("HBITMAP = %p (fresh)\n", static_cast<void *>(render));
+				return render;
+
+			},
+			args
+		);
+		
+		const auto & render = this->m_optRenderer.getPage(this->m_fpagenum);
+
+		auto memdc = ::CreateCompatibleDC(dc);
+		DEBUGPRINT("HBITMAP = %p\n", static_cast<void *>(render.get()));
+		auto hbmold = ::SelectObject(memdc, render.get());
+
+		::BitBlt(dc, pos.x, pos.y, newsize.x, newsize.y, memdc, 0, 0, SRCCOPY);
+
+		::SelectObject(memdc, hbmold);
+		::DeleteDC(memdc);
 
 		return error::noerror;
 	}

@@ -1,5 +1,7 @@
 #pragma once
+
 #include "common.hpp"
+#include "hdcbuffer.hpp"
 
 #include <vector>
 
@@ -17,6 +19,8 @@ namespace pdfv
 		std::size_t m_numPages{};
 		
 		std::unique_ptr<std::uint8_t> m_buf{ nullptr };
+
+		hdc::Renderer m_optRenderer;
 
 	public:
 		Pdfium() noexcept;
@@ -74,7 +78,7 @@ namespace pdfv
 		//	Renders the current page of the PDF document to the specified
 		//	position on the device context with specified size
 		//
-		error::Errorcode pageRender(HDC dc, pdfv::xy<int> pos, pdfv::xy<int> size) const noexcept;
+		error::Errorcode pageRender(HDC dc, pdfv::xy<int> pos, pdfv::xy<int> size);
 
 		//
 		//	Returns the page count of the currently opened PDF document
