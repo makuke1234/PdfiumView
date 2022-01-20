@@ -90,7 +90,61 @@ namespace pdfv
 
 		[[nodiscard]] POINT getCur(POINT def = {}) noexcept;
 		[[nodiscard]] POINT getCur(HWND hwnd, POINT def = {}) noexcept;
-		
+
+		template<typename T>
+		struct GDI
+		{
+			T obj;
+
+			constexpr GDI(const T & value) noexcept
+				: obj(value)
+			{
+			}
+			GDI(const GDI & other) = delete;
+			constexpr GDI(GDI && other) noexcept
+				: obj(other.obj)
+			{
+				other.obj = nullptr;
+			}
+			GDI & operator=(const GDI & other) = delete;
+			GDI & operator=(GDI && other) noexcept
+			{
+				this->~GDI();
+				this->obj = other.obj;
+				other.obj = nullptr;
+				return *this;
+			}
+			~GDI() noexcept
+			{
+				if (this->obj != nullptr)
+				{
+					auto temp{ this->obj };
+					this->obj = nullptr;
+					::DeleteObject(temp);
+				}
+			}
+
+			[[nodiscard]] constexpr operator T &() noexcept
+			{
+				return this->obj;
+			}
+			[[nodiscard]] constexpr operator const T &() const noexcept
+			{
+				return this->obj;
+			}
+			[[nodiscard]] constexpr T & get() noexcept
+			{
+				return this->obj;
+			}
+			[[nodiscard]] constexpr const T & get() const noexcept
+			{
+				return this->obj;
+			}
+			[[nodiscard]] constexpr T * operator->() noexcept
+			{
+				return &this->obj;
+			}
+		};
 	}
 
 	extern std::function<void(wchar_t **)> getArgsFree;
