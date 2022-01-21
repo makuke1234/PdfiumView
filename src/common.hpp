@@ -96,12 +96,12 @@ namespace pdfv
 		 * @brief Alias of getCliR
 		 * 
 		 */
-		constexpr auto getClientRect = getCliR;
+		constexpr auto getClientRect{ getCliR };
 		/**
 		 * @brief Alias of getWinR
 		 * 
 		 */
-		constexpr auto getWindowRect = getWinR;
+		constexpr auto getWindowRect{ getWinR };
 
 		/**
 		 * @brief Get window text
@@ -116,7 +116,7 @@ namespace pdfv
 		 * @brief Alias of getWinText
 		 * 
 		 */
-		constexpr auto getWindowText = getWinText;
+		constexpr auto getWindowText{ getWinText };
 
 		/**
 		 * @brief Set window font
@@ -200,6 +200,17 @@ namespace pdfv
 
 		void openWeb(LPCWSTR url) noexcept;
 
+		/**
+		 * @brief Alias for openWeb
+		 * 
+		 */
+		constexpr auto openURL{ openWeb };
+		/**
+		 * @brief Alias for openWeb
+		 * 
+		 */
+		constexpr auto openWebPage{ openWeb };
+
 
 		auto GDIDeleter = []<concepts::pointer T>(T obj) noexcept
 		{
@@ -279,7 +290,7 @@ namespace pdfv
 	 * @brief Alias of initCC
 	 * 
 	 */
-	constexpr auto initCommontControls = initCC;
+	constexpr auto initCommontControls{ initCC };
 
 	/**
 	 * @brief Data structure that represents x, y coordinate pair of a point, provides
@@ -355,7 +366,7 @@ namespace pdfv
 		 * @param rhs Second value pair
 		 * @param epsilon Precision of closeness
 		 */
-		[[nodiscard]] constexpr bool isclose(const xy & rhs, const T epsilon) noexcept
+		[[nodiscard]] constexpr bool isclose(const xy & rhs, const T epsilon) const noexcept
 		{
 			return (std::abs(x - rhs.x) <= epsilon) && (std::abs(y - rhs.y) <= epsilon);
 		}

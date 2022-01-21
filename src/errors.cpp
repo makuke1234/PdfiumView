@@ -23,14 +23,17 @@ void pdfv::error::report(pdfv::error::Errorcode errid, HWND hwnd) noexcept
 {
 	DEBUGPRINT("pdfv::error::report(%d, %p)\n", errid, static_cast<void *>(hwnd));
 	
-	static const wchar_t * emptyTitle = L"";
+	static const wchar_t * emptyTitle{ L"" };
 
 	assert((errid >= success) && (errid < max_error));
-	wchar_t *temp = const_cast<wchar_t *>(emptyTitle), tempabstract[2048];
-	if (hwnd != nullptr)
+	const wchar_t * temp{ emptyTitle };
+	wchar_t tempabstract[2048];
+	if (hwnd != nullptr) [[likely]]
 	{
-		::GetWindowTextW(hwnd, tempabstract, 2048);
-		temp = tempabstract;
+		if (::GetWindowTextW(hwnd, tempabstract, 2048) > 0) [[likely]]
+		{
+			temp = tempabstract;
+		}
 	}
 	::MessageBoxW(hwnd, errMsgs[errid], temp, MB_ICONERROR | MB_OK);
 }

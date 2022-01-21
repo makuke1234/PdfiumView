@@ -111,6 +111,4 @@ int pdfv::debug::printf(const char * format, ...) noexcept
 	}
 }
 
-
-
 #endif

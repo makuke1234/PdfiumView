@@ -31,8 +31,9 @@
 [[nodiscard]] std::wstring pdfv::w::getWinText(HWND hwnd, const std::wstring & def)
 {
 	std::wstring str;
+	// Default limit for window strings
 	str.resize(2048);
-	auto len = ::GetWindowTextW(hwnd, str.data(), str.length() + 1);
+	auto len{ ::GetWindowTextW(hwnd, str.data(), str.length() + 1) };
 	str.resize(len);
 	if (len > 0) [[likely]]
 	{
@@ -112,8 +113,8 @@ void pdfv::w::openWeb(LPCWSTR url) noexcept
 [[nodiscard]] pdfv::ArgVecT pdfv::getArgs(LPWSTR cmdLine, int & argc) noexcept
 {
 	DEBUGPRINT("pdfv::getArgs(%p, %p)\n", static_cast<void *>(cmdLine), static_cast<void *>(&argc));
-	wchar_t ** argv = ::CommandLineToArgvW(cmdLine, &argc);
-	if (argv == nullptr)
+	wchar_t ** argv{ ::CommandLineToArgvW(cmdLine, &argc) };
+	if (argv == nullptr) [[unlikely]]
 	{
 		argc = 0;
 	}
@@ -186,8 +187,8 @@ pdfv::xy<float> pdfv::dpi{ 1.0f, 1.0f };
 
 namespace pdfv
 {
-	static constexpr UINT WM_MESSAGE = WM_USER + 1;
-	static bool AskProc_finished = false;
+	static constexpr UINT WM_MESSAGE{ WM_USER };
+	static bool AskProc_finished{ false };
 
 	LRESULT CALLBACK askProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept
 	{
@@ -217,7 +218,7 @@ namespace pdfv
 			break;
 		case WM_CREATE:
 		{
-			auto button1 = ::CreateWindowExW(
+			auto button1{ ::CreateWindowExW(
 				0,
 				L"button",
 				L"&OK",
@@ -230,8 +231,8 @@ namespace pdfv
 				reinterpret_cast<HMENU>(IDOK),
 				nullptr,
 				nullptr
-			);
-			auto button2 = ::CreateWindowExW(
+			) };
+			auto button2{ ::CreateWindowExW(
 				0,
 				L"button",
 				L"&Cancel",
@@ -244,7 +245,7 @@ namespace pdfv
 				reinterpret_cast<HMENU>(IDCANCEL),
 				nullptr,
 				nullptr
-			);
+			) };
 			messagebox = ::CreateWindowExW(
 				0,
 				L"static",
@@ -362,14 +363,14 @@ namespace pdfv
 {
 	DEBUGPRINT("pdfv::utf::conv(string_view %p)\n", static_cast<const void *>(str.data()));
 	
-	auto len = ::MultiByteToWideChar(
+	auto len{ ::MultiByteToWideChar(
 		CP_UTF8,
 		MB_PRECOMPOSED,
 		str.data(),
 		int(str.size()) + 1,
 		nullptr,
 		0
-	);
+	) };
 
 	std::wstring wstr;
 	wstr.resize(len);
@@ -389,7 +390,7 @@ namespace pdfv
 {
 	DEBUGPRINT("pdfv::utf::conv(wstring_view %p)\n", static_cast<const void *>(wstr.data()));
 
-	auto len = ::WideCharToMultiByte(
+	auto len{ ::WideCharToMultiByte(
 		CP_UTF8,
 		0,
 		wstr.data(),
@@ -398,7 +399,7 @@ namespace pdfv
 		0,
 		nullptr,
 		nullptr
-	);
+	) };
 
 	std::string str;
 	str.resize(len);

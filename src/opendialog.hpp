@@ -15,7 +15,7 @@ namespace pdfv
 		static constexpr const wchar_t * s_cDefaultOpenTitle{ L"Open PDF document..." };
 
 	public:
-		OpenDialog() noexcept = delete;
+		OpenDialog() = delete;
 		OpenDialog(std::size_t bufsize);
 		/**
 		 * @brief Construct a new Open Dialog object with given default filename and buffer size

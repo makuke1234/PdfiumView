@@ -7,7 +7,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR cmdLine, int nCmdShow)
 	DEBUGPRINT("wWinMain(%p, , %p, %d)\n", static_cast<void *>(hInst), static_cast<void *>(cmdLine), nCmdShow);
 
 	int argc;
-	auto argv = pdfv::getArgs(cmdLine, argc);
+	auto argv{ pdfv::getArgs(cmdLine, argc) };
 
 	wchar_t fname[MAX_PATH]{};
 	if (argv != nullptr && argc > 1)
@@ -15,19 +15,19 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR cmdLine, int nCmdShow)
 		::GetFullPathNameW(argv.get()[1], MAX_PATH, fname, nullptr);
 	}
 
-	auto otherWnd = pdfv::OtherWindow(fname);
+	pdfv::OtherWindow otherWnd{ fname };
 	if (otherWnd.exists())
 	{
 		return pdfv::error::success;
 	}
 
-	if (!pdfv::MainWindow::mwnd.init(hInst, argc, argv.get()))
+	if (!pdfv::MainWindow::mwnd.init(hInst, argc, argv.get())) [[unlikely]]
 	{
 		pdfv::error::report();
 		return pdfv::error::error;
 	}
 
-	if (!pdfv::MainWindow::mwnd.run(fname, nCmdShow))
+	if (!pdfv::MainWindow::mwnd.run(fname, nCmdShow)) [[unlikely]]
 	{
 		pdfv::error::report();
 		return pdfv::error::error;

@@ -12,7 +12,7 @@ void pdfv::hdc::Renderer::clear() noexcept
 void pdfv::hdc::Renderer::putPage(std::size_t pageIdx, xy<int> pos, xy<int> size, std::function<Renderer::RenderT (void *)> render, void * renderArg)
 {
 	bool reRender{ true };
-	if (auto it = this->bmBuffer.find(pageIdx); it != this->bmBuffer.end())
+	if (auto it{ this->bmBuffer.find(pageIdx) }; it != this->bmBuffer.end())
 	{
 		if (it->second.pos == pos && it->second.size == size)
 		{

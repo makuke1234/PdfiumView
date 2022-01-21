@@ -12,7 +12,7 @@ pdfv::MainWindow pdfv::MainWindow::mwnd;
 	{
 		RECT r;
 		TabCtrl_GetItemRect(this->m_tabs.m_tabshwnd, i, &r);
-		auto closeR = Tabs::s_calcCloseButton(r);
+		auto closeR{ Tabs::s_calcCloseButton(r) };
 
 		if (p.x >= closeR.left && p.x <= closeR.right &&
 			p.y >= closeR.top  && p.y <= closeR.bottom
@@ -36,7 +36,6 @@ void pdfv::MainWindow::aboutBox() noexcept
 		&MainWindow::aboutProc,
 		reinterpret_cast<LPARAM>(this)
 	);
-
 }
 
 pdfv::MainWindow::MainWindow() noexcept
@@ -92,7 +91,7 @@ pdfv::MainWindow::~MainWindow() noexcept
 	DEBUGPRINT("pdfv::MainWindow::~MainWindow()\n");
 
 	// Kill moving thread
-	if (this->m_moveThread != nullptr)
+	if (this->m_moveThread != nullptr) [[likely]]
 	{
 		this->m_moveKillSwitch = true;
 		::WaitForSingleObject(this->m_moveThread, 1000);
@@ -100,7 +99,7 @@ pdfv::MainWindow::~MainWindow() noexcept
 		this->m_moveThread = nullptr;
 	}
 
-	if (this->m_hwnd != nullptr)
+	if (this->m_hwnd != nullptr) [[unlikely]]
 	{
 		::DestroyWindow(this->m_hwnd);
 		this->m_hwnd = nullptr;
@@ -177,7 +176,7 @@ pdfv::MainWindow::~MainWindow() noexcept
 	// Add "about" to system menu (menu when caption bar is right-clicked)
 	if (this->m_helpAvailable) [[likely]]
 	{
-		auto hSysMenu = ::GetSystemMenu(this->m_hwnd, false);
+		auto hSysMenu{ ::GetSystemMenu(this->m_hwnd, false) };
 		::InsertMenuW(hSysMenu, 5, MF_BYPOSITION | MF_SEPARATOR, 0, nullptr);
 		::InsertMenuW(hSysMenu, 6, MF_BYPOSITION, IDM_HELP_ABOUT, L"&About");
 	}
@@ -205,8 +204,10 @@ int pdfv::MainWindow::msgLoop() const noexcept
 		if (bRet == -1) [[unlikely]]
 		{
 			// Some error happened
-			auto lastError = ::GetLastError();
-			wchar_t errText[256], temp[256];
+			auto lastError{ ::GetLastError() };
+			constexpr auto maxErr{ 256 };
+
+			wchar_t errText[maxErr], temp[maxErr];
 			switch (lastError)
 			{
 			case ERROR_INVALID_WINDOW_HANDLE:
@@ -220,7 +221,7 @@ int pdfv::MainWindow::msgLoop() const noexcept
 					lastError,
 					MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 					temp,
-					256,
+					maxErr,
 					nullptr
 				);
 				::swprintf_s(errText, L"%s\nError code: " PTRPRINT, temp, lastError);
@@ -249,7 +250,7 @@ int pdfv::MainWindow::msgLoop() const noexcept
 
 void pdfv::MainWindow::close() const noexcept
 {
-	if (this->m_hwnd != nullptr)
+	if (this->m_hwnd != nullptr) [[likely]]
 	{
 		::SendMessageW(this->m_hwnd, WM_CLOSE, 0, 0);
 	}
@@ -279,7 +280,7 @@ int pdfv::MainWindow::message(LPCWSTR message, UINT type) const noexcept
 	return ::MessageBoxW(this->m_hwnd, message, this->m_title.c_str(), type);
 }
 
-LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept
+LRESULT CALLBACK pdfv::MainWindow::windowProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp) noexcept
 {
 	switch (uMsg)
 	{
@@ -342,7 +343,7 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 
 LRESULT pdfv::MainWindow::wOnDrawItem(LPARAM lp) noexcept
 {
-	auto dis = reinterpret_cast<DRAWITEMSTRUCT *>(lp);
+	auto dis{ reinterpret_cast<DRAWITEMSTRUCT *>(lp) };
 	DEBUGPRINT("pdfv::MainWindow::wOnDrawItem(%p)\n", static_cast<void *>(dis));
 	
 	if (dis->hwndItem == this->m_tabs.m_tabshwnd)
@@ -435,7 +436,7 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 		break;
 	case IDC_TABULATE:
 	{
-		ssize_t idx = this->m_tabs.m_tabindex + 1;
+		ssize_t idx{ this->m_tabs.m_tabindex + 1 };
 		if (idx == ssize_t(this->m_tabs.size()))
 		{
 			idx = 0;
@@ -445,7 +446,7 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 	}	
 	case IDC_TABULATEBACK:
 	{
-		ssize_t idx = this->m_tabs.m_tabindex - 1;
+		ssize_t idx{ this->m_tabs.m_tabindex - 1 };
 		if (idx == -1)
 		{
 			idx = this->m_tabs.size() - 1;
@@ -454,7 +455,7 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 		break;
 	}
 	default:
-		if (const auto comp = int(wp) - IDM_LIMIT; comp >= 0 && comp < int(this->m_tabs.size()))
+		if (const auto comp{ int(wp) - IDM_LIMIT }; comp >= 0 && comp < int(this->m_tabs.size()))
 		{
 			if (this->m_tabs.size() > 1)
 			{
@@ -506,27 +507,29 @@ void pdfv::MainWindow::wOnKeydown(WPARAM wp) noexcept
 void pdfv::MainWindow::wOnMousewheel(WPARAM wp) noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::wOnMousewheel(%u)\n", wp);
-	static int delta = 0;
+	static int delta{ 0 };
 	delta += int(GET_WHEEL_DELTA_WPARAM(wp));
 
 	if (std::abs(delta) >= WHEEL_DELTA)
 	{
-		auto p = w::getCur();
+		auto p{ w::getCur() };
 		auto pt1{ xy<int>{ p.x, p.y } - mwnd.m_pos };
 		auto pt2{ mwnd.m_tabs.m_pos  + mwnd.m_tabs.m_offset };
 		auto sz { mwnd.m_tabs.m_size - mwnd.m_tabs.m_offset };
 
-		short dir = delta > 0 ? SB_LINEUP : SB_LINEDOWN;
+		auto dir{ delta > 0 ? SB_LINEUP : SB_LINEDOWN };
 		if (pt1.x >= pt2.x && pt1.x <= (pt2.x + sz.x) &&
 			pt1.y >= pt2.y && pt1.y <= (pt2.y + sz.y))
 		{
 			for (int i = std::abs(delta); i > 0; i -= WHEEL_DELTA)
+			{
 				::SendMessageW(
 					mwnd.m_tabs.m_tabs[mwnd.m_tabs.m_tabindex]->tabhandle,
 					WM_VSCROLL,
 					MAKELONG(dir, 0),
 					0
 				);
+			}
 		}
 		delta %= ((delta < 0) * -1 + (delta >= 0)) * WHEEL_DELTA;
 	}
@@ -553,7 +556,7 @@ void pdfv::MainWindow::wOnTabMouseMove([[maybe_unused]] WPARAM wp, [[maybe_unuse
 {
 	DEBUGPRINT("pdfv::MainWindow::wOnTabMouseMove(%u, %u)\n", wp, lp);
 	
-	if (auto high = this->intersectsTabClose(); high != this->m_highlighted)
+	if (auto high{ this->intersectsTabClose() }; high != this->m_highlighted)
 	{
 		this->m_highlighted = high;
 		w::redraw(this->m_tabs.getHandle());
@@ -587,7 +590,7 @@ void pdfv::MainWindow::wOnMove(LPARAM lp) noexcept
 void pdfv::MainWindow::wOnSizing(WPARAM wp, LPARAM lp) noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::wOnSizing(%u, %lu)\n", wp, lp);
-	auto r = reinterpret_cast<RECT *>(lp);
+	auto r{ reinterpret_cast<RECT *>(lp) };
 	if ((r->right - r->left) < this->m_minArea.x)
 	{
 		switch (wp)
@@ -705,8 +708,7 @@ void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
 void pdfv::MainWindow::wOnCopydata(LPARAM lp) noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::wOnCopyData(%lu)\n", lp);
-	auto receive = reinterpret_cast<const COPYDATASTRUCT *>(lp);
-	if (receive != nullptr && receive->dwData > 0) [[likely]]
+	if (auto receive{ reinterpret_cast<const COPYDATASTRUCT *>(lp) }; receive != nullptr && receive->dwData > 0) [[likely]]
 	{
 		// Open pdf
 		std::wstring_view fnv(static_cast<wchar_t *>(receive->lpData));
@@ -724,7 +726,7 @@ void pdfv::MainWindow::wOnBringToFront() noexcept
 	::ShowWindow(this->m_hwnd, SW_RESTORE);
 	HWND topWnd{ ::GetForegroundWindow() };
 
-	DWORD dwMyID{  ::GetWindowThreadProcessId(this->m_hwnd, nullptr) };
+	DWORD dwMyID { ::GetWindowThreadProcessId(this->m_hwnd, nullptr) };
 	DWORD dwCurID{ ::GetWindowThreadProcessId(topWnd, nullptr) };
 	::AttachThreadInput(dwCurID, dwMyID, TRUE);
 	::SetWindowPos(this->m_hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
@@ -759,8 +761,8 @@ INT_PTR CALLBACK pdfv::MainWindow::aboutProc(HWND hwnd, UINT uMsg, WPARAM wp, LP
 		self = reinterpret_cast<MainWindow *>(lp);
 
 		// Re-position about box
-		auto r1 = w::getWinR(hwnd);
-		auto r2 = w::getWinR(self->m_hwnd);
+		auto r1{ w::getWinR(hwnd) };
+		auto r2{ w::getWinR(self->m_hwnd) };
 
 		// Move dialog to the center of parent window
 		w::moveWin(
@@ -783,7 +785,7 @@ void pdfv::MainWindow::openPdfFile(std::wstring_view file) noexcept
 	std::wstring_view fshort;
 	for (std::size_t i = file.length() - 1; i > 0; --i)
 	{
-		if (file[i] == L'\\')
+		if (file[i] == L'\\') [[unlikely]]
 		{
 			fshort = file.substr(i + 1);
 			break;

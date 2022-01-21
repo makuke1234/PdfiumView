@@ -77,7 +77,7 @@ namespace pdfv
 		void updatePDF() const noexcept;
 
 	private:
-		HWND tabhandle{ nullptr }, parent{ nullptr };
+		HWND parent{ nullptr }, tabhandle{ nullptr };
 		xy<int> size;
 
 		int yMaxScroll{};
@@ -119,7 +119,7 @@ namespace pdfv
 		using listtype = std::vector<std::unique_ptr<pdfv::TabObject>>;
 
 		listtype m_tabs;
-		ssize_t m_tabindex{};
+		ssize_t m_tabindex{ 0 };
 
 		friend class pdfv::MainWindow;
 

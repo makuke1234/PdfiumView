@@ -15,8 +15,8 @@ namespace pdfv
 
 		FPDF_DOCUMENT m_fdoc{ nullptr };
 		FPDF_PAGE m_fpage{ nullptr };
-		std::size_t m_fpagenum{};
-		std::size_t m_numPages{};
+		std::size_t m_fpagenum{ 0 };
+		std::size_t m_numPages{ 0 };
 		
 		std::unique_ptr<u8> m_buf{ nullptr };
 

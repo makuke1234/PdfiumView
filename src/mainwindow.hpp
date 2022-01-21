@@ -49,7 +49,7 @@ namespace pdfv
 		 * if intersects, the function sets m_highlightedIdx member variable
 		 * 
 		 * @return true Intersects
-		 * @return false Doesn't intersects
+		 * @return false Doesn't intersect
 		 */
 		[[nodiscard]] bool intersectsTabClose() noexcept;
 
@@ -165,16 +165,16 @@ namespace pdfv
 		 */
 		int message(LPCWSTR message = L"", UINT type = MB_OK) const noexcept;
 		
-		static constexpr UINT WM_LLMOUSEHOOK  = WM_USER;
-		static constexpr UINT WM_BRINGTOFRONT = WM_USER + 1;
-		static constexpr UINT WM_TABMOUSEMOVE = WM_USER + 2;
+		static constexpr UINT WM_LLMOUSEHOOK{  WM_USER };
+		static constexpr UINT WM_BRINGTOFRONT{ WM_USER + 1 };
+		static constexpr UINT WM_TABMOUSEMOVE{ WM_USER + 2 };
 		
 	private:
 		/**
 		 * @brief Win32 API callback function for the main window class
 		 * 
 		 */
-		static LRESULT CALLBACK windowProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept;
+		static LRESULT CALLBACK windowProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp) noexcept;
 		
 		LRESULT wOnDrawItem(LPARAM lp) noexcept;
 		void wOnCommand(WPARAM wp) noexcept;
@@ -205,5 +205,5 @@ namespace pdfv
 		void openPdfFile(std::wstring_view file) noexcept;
 	};
 
-	constexpr inline auto& window = MainWindow::mwnd;
+	constexpr inline auto & window{ MainWindow::mwnd };
 }

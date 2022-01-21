@@ -100,7 +100,7 @@ pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(const std::wstring & path, std::siz
 	assert(s_libInit == true);
 	this->pdfUnload();
 
-	auto file = ::CreateFileW(
+	auto file{ ::CreateFileW(
 		path.c_str(),
 		GENERIC_READ,
 		FILE_SHARE_READ,
@@ -108,16 +108,23 @@ pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(const std::wstring & path, std::siz
 		OPEN_EXISTING,
 		FILE_ATTRIBUTE_NORMAL,
 		nullptr
-	);
-	auto size = ::GetFileSize(file, nullptr);
-	auto buf = new std::uint8_t[size];
-	DWORD read = 0;
+	) };
+	if (file == INVALID_HANDLE_VALUE) [[unlikely]]
+	{
+		return error::pdf_file;
+	}
+
+	auto size{ ::GetFileSize(file, nullptr) };
+	auto buf{ new std::uint8_t[size] };
+	DWORD read{ 0 };
 
 	if (::ReadFile(file, buf, size, &read, nullptr))
 	{
 		::CloseHandle(file);
-		return this->pdfLoad(std::move(buf), size, page);
+		return this->pdfLoad(std::move(buf), std::size_t(read), page);
 	}
+
+	::CloseHandle(file);
 
 	return error::pdf_file;
 }
@@ -127,7 +134,7 @@ pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(const u8 * data, std::size_t length
 	assert(s_libInit == true);
 	this->pdfUnload();
 
-	auto buf = new u8[length];
+	auto buf{ new u8[length] };
 	std::copy(data, data + length, buf);
 	
 	return this->pdfLoad(std::move(buf), length, page);
@@ -144,10 +151,9 @@ pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(u8 * && data, std::size_t length, s
 	if (this->m_fdoc == nullptr) [[unlikely]]
 	{
 		s_errorHappened = true;
-		auto err = this->getLastError();
-		if (err == error::pdf_password)
+		if (auto err{ this->getLastError() }; err == error::pdf_password)
 		{
-			auto ans = utf::conv(askInfo(L"Enter password:", MainWindow::mwnd.getTitle()));
+			auto ans{ utf::conv(askInfo(L"Enter password:", MainWindow::mwnd.getTitle())) };
 			this->m_fdoc = FPDF_LoadMemDocument(this->m_buf.get(), length, ans.c_str());
 			if (this->m_fdoc == nullptr) [[unlikely]]
 			{
@@ -231,7 +237,7 @@ pdfv::error::Errorcode pdfv::Pdfium::pageRender(HDC dc, pdfv::xy<int> pos, pdfv:
 
 		pos = (size - newsize) / 2;
 
-		void * args[] = { this, dc, &newsize };
+		void * args[]{ this, dc, &newsize };
 		this->m_optRenderer.putPage(
 			this->m_fpagenum,
 			pos,
@@ -239,16 +245,16 @@ pdfv::error::Errorcode pdfv::Pdfium::pageRender(HDC dc, pdfv::xy<int> pos, pdfv:
 			[](void * args) -> hdc::Renderer::RenderT
 			{
 				DEBUGPRINT("render!\n");
-				auto argv = reinterpret_cast<void **>(args);
+				auto argv{ reinterpret_cast<void **>(args) };
 
-				auto self = static_cast<Pdfium *>(argv[0]);
-				auto dc   = static_cast<HDC>(argv[1]);
-				auto size = static_cast<xy<int> *>(argv[2]);
+				auto self{ static_cast<Pdfium *>(argv[0]) };
+				auto dc  { static_cast<HDC>(argv[1]) };
+				auto size{ static_cast<xy<int> *>(argv[2]) };
 
-				auto memdc = ::CreateCompatibleDC(dc);
-				auto render = ::CreateCompatibleBitmap(dc, size->x, size->y);
+				auto memdc { ::CreateCompatibleDC(dc) };
+				auto render{ ::CreateCompatibleBitmap(dc, size->x, size->y) };
 
-				auto hbmold = ::SelectObject(memdc, render);
+				auto hbmold{ ::SelectObject(memdc, render) };
 
 				RECT r{ .left = 0, .top = 0, .right = size->x, .bottom = size->y };
 				::FillRect(memdc, &r, reinterpret_cast<HBRUSH>(COLOR_WINDOW));
@@ -263,11 +269,11 @@ pdfv::error::Errorcode pdfv::Pdfium::pageRender(HDC dc, pdfv::xy<int> pos, pdfv:
 			args
 		);
 		
-		const auto & render = this->m_optRenderer.getPage(this->m_fpagenum);
+		const auto & render{ this->m_optRenderer.getPage(this->m_fpagenum) };
 
-		auto memdc = ::CreateCompatibleDC(dc);
+		auto memdc{ ::CreateCompatibleDC(dc) };
 		DEBUGPRINT("HBITMAP = %p\n", static_cast<void *>(render.get()));
-		auto hbmold = ::SelectObject(memdc, render.get());
+		auto hbmold{ ::SelectObject(memdc, render.get()) };
 
 		::BitBlt(dc, pos.x, pos.y, newsize.x, newsize.y, memdc, 0, 0, SRCCOPY);
 

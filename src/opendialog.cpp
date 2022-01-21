@@ -67,10 +67,10 @@ pdfv::OpenDialog & pdfv::OpenDialog::operator=(const OpenDialog & other)
 pdfv::OpenDialog & pdfv::OpenDialog::operator=(OpenDialog && other) noexcept
 {
 	DEBUGPRINT("pdfv::OpenDialog::operator=(OpenDialog && %p)\n", static_cast<void *>(&other));
-	this->m_lastName    = std::move(other.m_lastName);
-	this->m_bufSize     = other.m_bufSize;
+	this->m_lastName = std::move(other.m_lastName);
+	this->m_bufSize  = other.m_bufSize;
 	
-	other.m_bufSize = 0;
+	other.m_bufSize  = 0;
 
 	return *this;
 }
@@ -94,14 +94,14 @@ pdfv::OpenDialog & pdfv::OpenDialog::operator=(OpenDialog && other) noexcept
 	ofn.Flags        = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
 	ofn.lpstrDefExt  = L"pdf";
 
-	bool ret = ::GetOpenFileNameW(&ofn) ? true : false;
-	if (ret)
+	bool ret{ ::GetOpenFileNameW(&ofn) ? true : false };
+	if (ret) [[likely]]
 	{
 		output.resize(std::wcslen(output.c_str()));
 		std::copy(output.begin(), output.end(), this->m_lastName.get());
 		this->m_lastName.get()[output.length()] = L'\0';
 	}
-	else
+	else [[unlikely]]
 	{
 		output.assign(this->m_lastName.get(), lastnameLen);
 	}
@@ -112,13 +112,13 @@ pdfv::OpenDialog & pdfv::OpenDialog::operator=(OpenDialog && other) noexcept
 bool pdfv::OpenDialog::updateName(std::wstring_view newfilename) noexcept
 {
 	DEBUGPRINT("pdfv::OpenDialog::updateName(%p)\n", static_cast<const void *>(newfilename.data()));
-	if (this->m_bufSize <= (newfilename.length() + 1))
+	if (this->m_bufSize <= (newfilename.length() + 1)) [[likely]]
 	{
 		std::copy(newfilename.begin(), newfilename.end(), this->m_lastName.get());
 		this->m_lastName.get()[newfilename.length()] = L'\0';
 		return true;
 	}
-	else
+	else [[unlikely]]
 	{
 		return false;
 	}
