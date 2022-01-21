@@ -745,6 +745,9 @@ INT_PTR CALLBACK pdfv::MainWindow::aboutProc(HWND hwnd, UINT uMsg, WPARAM wp, LP
 	case WM_COMMAND:
 		switch (wp)
 		{
+		case IDB_GITHUB:
+			w::openWeb(PRODUCT_GITHUB_PAGE);
+			return TRUE;
 		case IDOK:
 		case IDCANCEL:
 			::EndDialog(hwnd, wp);

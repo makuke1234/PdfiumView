@@ -103,6 +103,11 @@ bool pdfv::w::resize(HWND hwnd, int x, int y, bool redraw) noexcept
 	return ::SetWindowPos(hwnd, nullptr, 0, 0, x, y, SWP_NOMOVE | SWP_NOZORDER | SWP_NOOWNERZORDER | (SWP_NOREDRAW * (!redraw))) ? true : false;
 }
 
+void pdfv::w::openWeb(LPCWSTR url) noexcept
+{
+	::ShellExecuteW(nullptr, L"open", url, nullptr, nullptr, SW_SHOWNORMAL);
+}
+
 
 [[nodiscard]] pdfv::ArgVecT pdfv::getArgs(LPWSTR cmdLine, int & argc) noexcept
 {

@@ -198,6 +198,8 @@ namespace pdfv
 		 */
 		bool resize(HWND hwnd, int x, int y, bool redraw = false) noexcept;
 
+		void openWeb(LPCWSTR url) noexcept;
+
 
 		auto GDIDeleter = []<concepts::pointer T>(T obj) noexcept
 		{
