@@ -405,13 +405,8 @@ void pdfv::Tabs::resize(xy<int> newsize) noexcept
 			TRUE
 		);
 	}
-
-	::MoveWindow(
-		this->m_tabshwnd,
-		this->m_pos.x,  this->m_pos.y,
-		this->m_size.x, this->m_size.y,
-		TRUE
-	);
+	
+	w::resize(this->getHandle(), this->m_size.x, this->m_size.y, true);
 }
 void pdfv::Tabs::move(xy<int> newpos) noexcept
 {
