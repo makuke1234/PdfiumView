@@ -34,7 +34,7 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 	* Make about dialog always centered
 		* *About dialog button is also centered*
 	* Make window size less restricted
-	* [ ] More refactoring of codebase
+	* More refactoring of codebase
 	* [ ] Add zooming capability
 
 * 0.3.0
