@@ -44,9 +44,20 @@ namespace pdfv
 		HANDLE m_moveThread{ nullptr };
 		bool m_moveKillSwitch{ false }, m_closeButtonDown{ false };
 
+		/**
+		 * @brief Tells if mouse cursor intersects with any tabs' close button,
+		 * if intersects, the function sets m_highlightedIdx member variable
+		 * 
+		 * @return true Intersects
+		 * @return false Doesn't intersects
+		 */
 		[[nodiscard]] bool intersectsTabClose() noexcept;
 
 		friend class OtherWindow;
+		/**
+		 * @brief Shows about dialog box
+		 * 
+		 */
 		void aboutBox() noexcept;
 		std::wstring m_aboutText{ DEFAULT_ABOUT_TEXT };
 
@@ -62,18 +73,40 @@ namespace pdfv
 		MainWindow & operator=(MainWindow && other) noexcept = delete;
 		~MainWindow() noexcept;
 
+		/**
+		 * @brief Initialise window object
+		 * 
+		 * @param hinst Module handle
+		 * @param argc Argument vector length
+		 * @param argv Argument vector
+		 * @return true Success
+		 * @return false Failure
+		 */
 		[[nodiscard]] bool init(HINSTANCE hinst, int argc, wchar_t ** argv) noexcept;
+		/**
+		 * @brief Run main window
+		 * 
+		 * @param fname PDF file name to open
+		 * @param nCmdShow Window show flag
+		 * @return true Success
+		 * @return false Failure
+		 */
 		[[nodiscard]] bool run(const wchar_t * fname, int nCmdShow) noexcept;
+		/**
+		 * @brief Message loop
+		 */
 		int msgLoop() const noexcept;
 
-		//
-		//	Enables/disables main window (unblocks/block input)
-		//
+		/**
+		 * @brief Enables/disable main window (unblocks/blocks input)
+		 * 
+		 * @param enable true by default
+		 */
 		void enable(bool enable = true) const noexcept;
-		//
-		//	Returns const reference to currently used WNDCLASSEXW structure
-		//
-		[[nodiscard]] constexpr const WNDCLASSEXW & getWindowClass() const noexcept
+		/**
+		 * @return const WNDCLASSEXW& Current window class extended object
+		 */
+		[[nodiscard]] constexpr const WNDCLASSEXW & getWinClass() const noexcept
 		{
 			return this->m_wcex;
 		}
@@ -89,10 +122,15 @@ namespace pdfv
 		{
 			return this->m_title;
 		}
+		/**
+		 * @brief Set new window title
+		 * 
+		 * @param newTitle New title
+		 */
 		void setTitle(std::wstring_view newTitle);
-		//
-		//	Returns const reference to current border width
-		//
+		/**
+		 * @return const xy<int>& Current border width
+		 */
 		[[nodiscard]] constexpr const xy<int> & border() const noexcept
 		{
 			return this->m_border;
@@ -106,15 +144,22 @@ namespace pdfv
 			return this->m_defaultFontBold;
 		}
 		
-		//
-		//	A wrapper function to display messages with this window as the
-		//	"owner" of the Message Box
-		//
+		/**
+		 * @brief Wrapper function to display messages with this window as the ownder of the messagebox
+		 * 
+		 * @param message Message to display
+		 * @param msgtitle Messagebox title
+		 * @param type Messagebox type, MB_OK by default
+		 * @return int Messagebox return value
+		 */
 		int message(LPCWSTR message, LPCWSTR msgtitle, UINT type = MB_OK) const noexcept;
-		//
-		//	A wrapper function to display messages with this window as the
-		//	"owner" of the Message Box
-		//
+		/**
+		 * @brief Wrapper function to display messages with this window as the ownder of the messagebox
+		 * 
+		 * @param message Message to display, empty string by default
+		 * @param type Messagebox type, MB_OK by default
+		 * @return int Messagebox return value
+		 */
 		int message(LPCWSTR message = L"", UINT type = MB_OK) const noexcept;
 		
 		static constexpr UINT WM_LLMOUSEHOOK  = WM_USER;
@@ -122,9 +167,10 @@ namespace pdfv
 		static constexpr UINT WM_TABMOUSEMOVE = WM_USER + 2;
 		
 	private:
-		//
-		//	The Windows API callback function for the main window "class"
-		//
+		/**
+		 * @brief Win32 API callback function for the main window class
+		 * 
+		 */
 		static LRESULT CALLBACK windowProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept;
 		
 		LRESULT wOnDrawItem(DRAWITEMSTRUCT * dis) noexcept;
@@ -142,14 +188,17 @@ namespace pdfv
 		void wOnCopydata(LPARAM lp) noexcept;
 		void wOnBringToFront() noexcept;
 
-		//
-		//	The Windows API callback function for the Help->About "class"
-		//
+		/**
+		 * @brief Win32 API callback function for Help->About dialog
+		 * 
+		 */
 		static INT_PTR CALLBACK aboutProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept;
 
-		//
-		//	Handles the opening of PDF documents
-		//
+		/**
+		 * @brief Opens PDF file
+		 * 
+		 * @param file PDF file name
+		 */
 		void openPdfFile(std::wstring_view file) noexcept;
 	};
 

@@ -302,7 +302,7 @@ namespace pdfv
 {
 	DEBUGPRINT("pdfv::askInfo(%p, %p)\n", static_cast<const void *>(message.data()), static_cast<const void *>(title.data()));
 
-	WNDCLASSEXW wc{ MainWindow::mwnd.getWindowClass() };
+	WNDCLASSEXW wc{ MainWindow::mwnd.getWinClass() };
 	wc.lpfnWndProc   = &pdfv::askProc;
 	wc.lpszClassName = L"AskInfoClass";
 	wc.lpszMenuName  = nullptr;

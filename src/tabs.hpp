@@ -28,13 +28,25 @@ namespace pdfv
 		TabObject & operator=(TabObject && other) noexcept;
 		~TabObject() noexcept;
 		
-		//
-		//	Inserts handle to the tab and sets its parent to the tab if needed
-		//
+		/**
+		 * @brief Inserts handle to the taba and sets its parent to the tab if necessary
+		 * 
+		 * @param handle Window handle
+		 */
 		void insert(HWND handle);
-		//
-		//	Inserts and constructs in-place an element to the tab
-		//
+		/**
+		 * @brief Inserts and constructs in-place an element to the tab
+		 * 
+		 * @param dwExStyle Extended style
+		 * @param className Window class name
+		 * @param windowName Window title
+		 * @param dwStyle Style
+		 * @param pos Window position value pair, relative to the tab, CW_USEDEFAULT by default
+		 * @param size Window size value pair, CW_USEDEFAULT by default
+		 * @param menu Window menu handle, nullptr by default
+		 * @param hinst Module instance handle, nullptr by default
+		 * @return const HWND& Constructed window handle
+		 */
 		const HWND & insert(
 			DWORD dwExStyle,
 			std::wstring_view className,
@@ -45,22 +57,26 @@ namespace pdfv
 			HMENU menu = nullptr,
 			HINSTANCE hinst = nullptr
 		);
-		//
-		//	Removes specified handle from the tab and destroys it
-		//	Sets the given handle to nullptr
-		//
+		/**
+		 * @brief Remove handle from the tab and destroys it, sets given handle
+		 * to nullptr
+		 * 
+		 * @param handle Window handle
+		 */
 		void remove(HWND & handle) noexcept;
-		//
-		//	Shows the tab window
-		//
+		/**
+		 * @brief Shows/hides the tab window
+		 * 
+		 * @param visible Determines the visibility of the window
+		 */
 		void show(bool visible = true) const noexcept;
-		//
-		//	Informs the WndProc of the tab to update it's scrollbars
-		//
+		/**
+		 * @brief Informs the window procedure of the tab to update its scrollbars
+		 * 
+		 */
 		void updatePDF() const noexcept;
 
 	private:
-		// Private variables
 		HWND tabhandle{ nullptr }, parent{ nullptr };
 		xy<int> size;
 
@@ -73,7 +89,15 @@ namespace pdfv
 		friend class pdfv::Tabs;
 		friend class pdfv::MainWindow;
 
+		/**
+		 * @brief "Hub" to tabs' window procedures
+		 * 
+		 */
 		static LRESULT CALLBACK tabProcHub(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp);
+		/**
+		 * @brief "Real" tab's window procedure
+		 * 
+		 */
 		LRESULT tabProc(UINT uMsg, WPARAM wp, LPARAM lp);
 	};
 
@@ -103,9 +127,12 @@ namespace pdfv
 
 	public:
 		Tabs() noexcept = default;
-		//
-		//	Initializes a tab by using parent's HWND and HINSTANCE
-		//
+		/**
+		 * @brief Initialises a tab by using parent's window handle and module handle
+		 * 
+		 * @param hwnd Parent's window handle
+		 * @param hInst Module instance handle
+		 */
 		Tabs(HWND hwnd, HINSTANCE hInst) noexcept;
 		Tabs(const Tabs & other) = delete;
 		Tabs(Tabs && other) noexcept;
@@ -113,25 +140,30 @@ namespace pdfv
 		Tabs & operator=(Tabs && other) noexcept;
 		~Tabs() noexcept;
 
-		//
-		//	Returns const reference to the tabs' handle
-		//
+		/**
+		 * @return constexpr const HWND& Tab system window handle
+		 */
 		[[nodiscard]] constexpr const HWND & getHandle() const noexcept
 		{
 			return this->m_tabshwnd;
 		}
 
-		//
-		//	Resizes the whole tab control
-		//
+		/**
+		 * @brief Resizes the whole tab control
+		 * 
+		 * @param newsize New size value pair
+		 */
 		void resize(xy<int> newsize) noexcept;
-		//
-		//	Moves the tab control to a new position
-		//
+		/**
+		 * @brief Move the tab control to a new position
+		 * 
+		 * @param newpos New position value pair
+		 */
 		void move(xy<int> newpos) noexcept;
-		//
-		//	Redraws the tab control
-		//
+		/**
+		 * @brief Redraws the tab control
+		 * 
+		 */
 		void repaint() const noexcept;
 		/**
 		 * @brief Calculates the rectangle of tab close button, respective to tabs rectangle
@@ -140,43 +172,56 @@ namespace pdfv
 		 * @return RECT Calculated rectangle
 		 */
 		[[nodiscard]] static RECT s_calcCloseButton(RECT itemRect) noexcept;
-		//
-		//	Inserts a new tab at a given index to the tab control
-		//	Default index is tabs::endpos
-		//
+		/**
+		 * @brief Inserts a new tab at a given index to the tab control
+		 * 
+		 * @param title Tab title
+		 * @param index Tab index, Tabs::endpos by default
+		 * @return listtype::iterator Iterator of newly inserted tab
+		 */
 		listtype::iterator insert(std::wstring_view title, const ssize_t index = Tabs::endpos);
-		//
-		//	Removes a tab with the specified name
-		//
+		/**
+		 * @brief Removes a tab with the specified name
+		 * 
+		 * @param title Tab name
+		 */
 		void remove(std::wstring_view title) noexcept;
-		//
-		//	Removes a tab at the specified index
-		//	Default index is tabs::endpos
-		//
+		/**
+		 * @brief Remove a tab at the specified index
+		 * 
+		 * @param index Tab index, Tabs::endpos by default
+		 */
 		void remove(const ssize_t index = Tabs::endpos) noexcept;
-		//
-		//	Renames a tab at the specified index
-		//	Default index is tabs::endpos
-		//
+		/**
+		 * @brief Renames a tab at the specified index
+		 * 
+		 * @param title Tab new title
+		 * @param index Tab index, Tabs::endpos by default
+		 * @return listtype::iterator Iterator of renamed tabs
+		 */
 		listtype::iterator rename(std::wstring_view title, const ssize_t index = Tabs::endpos);
-		//
-		//	Returns tab's name at the specified index
-		//
+		/**
+		 * @brief Get tab name
+		 * 
+		 * @param index Tab index, Tabs::endpos by default
+		 * @return std::wstring_view Tab's name
+		 */
 		[[nodiscard]] std::wstring_view getName(const ssize_t index = Tabs::endpos) const noexcept;
-		//
-		//	Selects a tab at the specified index
-		//	Default index is tabs::endpos
-		//
+		/**
+		 * @brief Selects a tab, makes it active
+		 * 
+		 * @param index Tab index, Tabs::endpos by default
+		 */
 		void select(const ssize_t index = Tabs::endpos) noexcept;
-		//
-		//	Returns the number of tabs currently present
-		//
+		/**
+		 * @return std::size_t Number of tab currently present
+		 */
 		[[nodiscard]] std::size_t size() const noexcept;
-		//
-		//	Handles the tab control active tab changes
-		//
+		/**
+		 * @brief Handles the tab control active tab changes
+		 * 
+		 */
 		void selChange() noexcept;
-
 
 	};
 }

@@ -197,6 +197,11 @@ namespace pdfv
 		 */
 		bool resize(HWND hwnd, int x, int y, bool redraw = false) noexcept;
 
+		/**
+		 * @brief Safe wrapper for GDI types
+		 * 
+		 * @tparam T Any GDI type
+		 */
 		template<typename T>
 		struct GDI
 		{

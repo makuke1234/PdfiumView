@@ -11,13 +11,9 @@ namespace pdfv
 		std::unique_ptr<wchar_t> m_currentName{ nullptr };
 		std::size_t m_bufSize{ 0 };
 
-		static inline const wchar_t * s_cDefaultOpenFilter{
-			L"PDF documents (*.pdf)\0*.pdf\0All files (*.*)\0*.*\0"
-		};
-		static inline const int s_cDefaultOpenFilterIndex{ 1 };
-		static inline const wchar_t * s_cDefaultOpenTitle{
-			L"Open PDF document..."
-		};
+		static constexpr const wchar_t * s_cDefaultOpenFilter{ L"PDF documents (*.pdf)\0*.pdf\0All files (*.*)\0*.*\0" };
+		static constexpr int s_cDefaultOpenFilterIndex{ 1 };
+		static constexpr const wchar_t * s_cDefaultOpenTitle{ L"Open PDF document..." };
 
 	public:
 		OpenDialog() noexcept = delete;
@@ -30,7 +26,22 @@ namespace pdfv
 		OpenDialog & operator=(OpenDialog && other) noexcept;
 		~OpenDialog() noexcept = default;
 
+		/**
+		 * @brief Opens dialog file open dialog
+		 * 
+		 * @param hwnd Window handle of the dialog's owner
+		 * @param output Output string from dialog
+		 * @return true Retrieving output was successful
+		 * @return false 
+		 */
 		[[nodiscard]] bool open(HWND hwnd, std::wstring & output);
+		/**
+		 * @brief Updates default file name
+		 * 
+		 * @param newfilename New default file name for file open dialog
+		 * @return true Success
+		 * @return false Failure
+		 */
 		bool updateName(std::wstring_view newfilename) noexcept;
 	};
 }
