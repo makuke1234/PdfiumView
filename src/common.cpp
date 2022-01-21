@@ -104,13 +104,7 @@ bool pdfv::w::resize(HWND hwnd, int x, int y, bool redraw) noexcept
 }
 
 
-std::function<void(wchar_t **)> pdfv::getArgsFree = [](wchar_t ** argVec) noexcept
-{
-	DEBUGPRINT("pdfv::getArgsFree(%p)\n", static_cast<void *>(argVec));
-	::LocalFree(argVec);
-};
-
-[[nodiscard]] std::unique_ptr<wchar_t *, decltype(pdfv::getArgsFree)> pdfv::getArgs(LPWSTR cmdLine, int & argc) noexcept
+[[nodiscard]] pdfv::ArgVecT pdfv::getArgs(LPWSTR cmdLine, int & argc) noexcept
 {
 	DEBUGPRINT("pdfv::getArgs(%p, %p)\n", static_cast<void *>(cmdLine), static_cast<void *>(&argc));
 	wchar_t ** argv = ::CommandLineToArgvW(cmdLine, &argc);
@@ -119,7 +113,7 @@ std::function<void(wchar_t **)> pdfv::getArgsFree = [](wchar_t ** argVec) noexce
 		argc = 0;
 	}
 
-	return { argv, pdfv::getArgsFree };
+	return ArgVecT(argv);
 }
 
 [[nodiscard]] bool pdfv::initCC() noexcept

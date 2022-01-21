@@ -2,6 +2,16 @@
 #include "mainwindow.hpp"
 #include <iostream>
 
+static struct PdfiumFree
+{
+	~PdfiumFree() noexcept
+	{
+		pdfv::Pdfium::free();
+	}
+
+} s_pdfiumFree;
+
+
 pdfv::Pdfium::Pdfium() noexcept
 {
 	DEBUGPRINT("pdfv::Pdfium::Pdfium()\n");
@@ -37,7 +47,7 @@ pdfv::Pdfium & pdfv::Pdfium::operator=(Pdfium && other) noexcept
 }
 pdfv::Pdfium::~Pdfium() noexcept
 {
-	DEBUGPRINT("pdfv::Pdfium::~Pdfium()");
+	DEBUGPRINT("pdfv::Pdfium::~Pdfium()\n");
 
 	this->pdfUnload();
 }
@@ -171,7 +181,7 @@ void pdfv::Pdfium::pdfUnload() noexcept
 
 pdfv::error::Errorcode pdfv::Pdfium::pageLoad(std::size_t page) noexcept
 {
-	DEBUGPRINT("pdf::Pdfium::pageLoad(%zu)\n", page);
+	DEBUGPRINT("pdfv::Pdfium::pageLoad(%zu)\n", page);
 	assert(s_libInit == true);
 	assert(page >= 1);
 	assert(page <= this->m_numPages);
@@ -193,7 +203,7 @@ pdfv::error::Errorcode pdfv::Pdfium::pageLoad(std::size_t page) noexcept
 }
 void pdfv::Pdfium::pageUnload() noexcept
 {
-	DEBUGPRINT("pdf::Pdfium::pageUnload()\n");
+	DEBUGPRINT("pdfv::Pdfium::pageUnload()\n");
 	assert(s_libInit == true);
 
 	if (this->m_fpage != nullptr)
@@ -206,7 +216,7 @@ void pdfv::Pdfium::pageUnload() noexcept
 
 pdfv::error::Errorcode pdfv::Pdfium::pageRender(HDC dc, pdfv::xy<int> pos, pdfv::xy<int> size)
 {
-	DEBUGPRINT("pdf::Pdfium::pageRender(%p, %p, %p)\n", static_cast<void *>(dc), static_cast<void *>(&pos), static_cast<void *>(&size));
+	DEBUGPRINT("pdfv::Pdfium::pageRender(%p, %p, %p)\n", static_cast<void *>(dc), static_cast<void *>(&pos), static_cast<void *>(&size));
 	assert(s_libInit == true);
 
 	if (this->m_fpage != nullptr)

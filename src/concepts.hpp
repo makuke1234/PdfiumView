@@ -85,4 +85,11 @@ namespace pdfv::concepts
 	template<typename T, typename U>
 	concept differecnt_nontrivial_both = nontrivial_both<T, U> && !std::is_same_v<T, U>;
 
+	/**
+	 * @brief Type has to be pointer
+	 * 
+	 * @tparam T 
+	 */
+	template<typename T>
+	concept pointer = std::is_pointer_v<T>;
 }

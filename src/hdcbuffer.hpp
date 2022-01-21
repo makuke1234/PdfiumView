@@ -10,7 +10,7 @@ namespace pdfv::hdc
 	class Renderer
 	{
 	public:
-		using RenderT = w::GDI<HBITMAP>;
+		using RenderT = w::SafeGDI<HBITMAP>;
 
 		struct RenderStats
 		{

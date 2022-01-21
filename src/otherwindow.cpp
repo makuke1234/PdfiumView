@@ -10,7 +10,7 @@ pdfv::OtherWindow::OtherWindow(std::wstring_view fileName) noexcept
 		::ReleaseMutex(this->mtx);
 		this->mtx = nullptr;
 
-		if (auto otherwindow = ::FindWindow(APP_CLASSNAME, nullptr); otherwindow != nullptr)
+		if (auto otherwindow{ ::FindWindowW(APP_CLASSNAME, nullptr) }; otherwindow != nullptr)
 		{
 			if (fileName.length() != 0)
 			{

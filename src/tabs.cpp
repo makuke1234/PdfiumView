@@ -390,7 +390,6 @@ pdfv::Tabs::~Tabs() noexcept
 		this->m_tabshwnd = nullptr;
 	}
 	this->m_parent = nullptr;
-	pdfv::Pdfium::free();
 }
 
 void pdfv::Tabs::resize(xy<int> newsize) noexcept

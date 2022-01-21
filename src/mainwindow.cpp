@@ -43,8 +43,6 @@ pdfv::MainWindow::MainWindow() noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::MainWindow()\n");
 	
-	pdfv::Pdfium::init();
-
 	auto screen{ ::GetDC(nullptr) };
 	dpi = {
 		f(::GetDeviceCaps(screen, LOGPIXELSX)) / 96.0f,
@@ -249,6 +247,14 @@ int pdfv::MainWindow::msgLoop() const noexcept
 	return int(msg.wParam);
 }
 
+void pdfv::MainWindow::close() const noexcept
+{
+	if (this->m_hwnd != nullptr)
+	{
+		::SendMessageW(this->m_hwnd, WM_CLOSE, 0, 0);
+	}
+}
+
 
 void pdfv::MainWindow::enable(bool enable) const noexcept
 {
@@ -308,7 +314,8 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 		mwnd.wOnSize();
 		break;
 	case WM_CLOSE:
-		mwnd.~MainWindow();
+		::DestroyWindow(hwnd);
+		mwnd.m_hwnd = nullptr;
 		break;
 	case WM_DESTROY:
 		::PostQuitMessage(pdfv::error::success);
@@ -365,7 +372,7 @@ LRESULT pdfv::MainWindow::wOnDrawItem(DRAWITEMSTRUCT * dis) noexcept
 		auto r{ dis->rcItem };
 
 		// Draw text
-		::SelectObject(hdc, this->m_defaultFont);
+		::SelectObject(hdc, this->getDefFont());
 		const auto & item{ this->m_tabs.m_tabs[dis->itemID] };
 		::DrawTextW(hdc, item->first.c_str(), item->first.length(), &r, DT_SINGLELINE | DT_VCENTER | DT_CENTER);
 
@@ -378,13 +385,13 @@ LRESULT pdfv::MainWindow::wOnDrawItem(DRAWITEMSTRUCT * dis) noexcept
 			hdc,
 			&closeR,
 			(this->m_highlighted && (this->m_highlightedIdx == dis->itemID)) ?
-				(this->m_closeButtonDown ? this->m_darkRedBrush : this->m_redBrush) :
-				 this->m_brightRedBrush
+				(this->m_closeButtonDown ? this->m_darkRedBrush.get() : this->m_redBrush.get()) :
+				 this->m_brightRedBrush.get()
 		);
 
 		// Draw text on top of close button
 		::SetTextColor(hdc, RGB(255, 255, 255));
-		::SelectObject(hdc, this->m_defaultFontBold);
+		::SelectObject(hdc, this->getDefFontBold());
 		::DrawTextW(hdc, L"X", 1, &closeR, DT_SINGLELINE | DT_VCENTER | DT_CENTER | DT_NOCLIP);
 		
 		// Double-buffering action
@@ -417,7 +424,7 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 		::SendMessageW(this->m_hwnd, WM_COMMAND, IDM_LIMIT + this->m_tabs.m_tabindex, 0);
 		break;
 	case IDM_FILE_EXIT:
-		this->~MainWindow();
+		this->close();
 		break;
 	case IDM_HELP_ABOUT:
 		if (this->m_helpAvailable)
@@ -463,7 +470,7 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 			{
 				if (this->m_tabs.getName() == Tabs::defaulttitlepadded)
 				{
-					this->~MainWindow();
+					this->close();
 				}
 				else
 				{
@@ -740,15 +747,12 @@ INT_PTR CALLBACK pdfv::MainWindow::aboutProc(HWND hwnd, UINT uMsg, WPARAM wp, LP
 		case IDOK:
 		case IDCANCEL:
 			::EndDialog(hwnd, wp);
-			self->m_dlg = nullptr;
 			self = nullptr;
 			return TRUE;
 		}
 		break;
 	case WM_INITDIALOG:
 		self = reinterpret_cast<MainWindow *>(lp);
-
-		self->m_dlg = hwnd;
 
 		// Re-position about box
 		auto r1 = w::getWinR(hwnd);

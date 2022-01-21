@@ -23,6 +23,7 @@
 #include "errors.hpp"
 #include "version.hpp"
 #include "resource.hpp"
+#include "safeptr.hpp"
 
 #define APP_DEFSIZE_X 350
 #define APP_DEFSIZE_Y 200
@@ -197,77 +198,64 @@ namespace pdfv
 		 */
 		bool resize(HWND hwnd, int x, int y, bool redraw = false) noexcept;
 
+
+		auto GDIDeleter = []<concepts::pointer T>(T obj) noexcept
+		{
+			::DeleteObject(obj);
+		};
+		auto WindowDeleter = [](HWND obj) noexcept
+		{
+			::DestroyWindow(obj);
+		};
+		auto DCDeleter = [](HDC obj) noexcept
+		{
+			::DeleteDC(obj);
+		};
+
 		/**
 		 * @brief Safe wrapper for GDI types
 		 * 
 		 * @tparam T Any GDI type
 		 */
 		template<typename T>
-		struct GDI
-		{
-			T obj{ nullptr };
+		using SafeGDI = w::Safeptr<T, decltype(w::GDIDeleter)>;
 
-			GDI() = default;
-			constexpr GDI(const T & value) noexcept
-				: obj(value)
-			{
-			}
-			constexpr GDI(const GDI & other) noexcept
-				: obj(other.obj)
-			{
-			}
-			constexpr GDI(GDI && other) noexcept
-				: obj(other.obj)
-			{
-				other.obj = nullptr;
-			}
-			GDI & operator=(const GDI & other) noexcept
-			{
-				this->~GDI();
-				this->obj = other.obj;
-				return *this;
-			}
-			GDI & operator=(GDI && other) noexcept
-			{
-				this->~GDI();
-				this->obj = other.obj;
-				other.obj = nullptr;
-				return *this;
-			}
-			~GDI() noexcept
-			{
-				if (this->obj != nullptr)
-				{
-					auto temp{ this->obj };
-					this->obj = nullptr;
-					::DeleteObject(temp);
-				}
-			}
+		/**
+		 * @brief Safe wrapper for HWND
+		 * 
+		 * @tparam T 
+		 */
+		template<typename T>
+		using SafeWin = w::Safeptr<T, decltype(w::WindowDeleter)>;
+		
+		/**
+		 * @brief Type alias for SafeWin
+		 * 
+		 * @tparam T 
+		 */
+		template<typename T>
+		using SafeWindow = SafeWin<T>;
 
-			[[nodiscard]] constexpr operator T & () noexcept
-			{
-				return this->obj;
-			}
-			[[nodiscard]] constexpr operator const T & () const noexcept
-			{
-				return this->obj;
-			}
-			[[nodiscard]] constexpr T & get() noexcept
-			{
-				return this->obj;
-			}
-			[[nodiscard]] constexpr const T & get() const noexcept
-			{
-				return this->obj;
-			}
-			[[nodiscard]] constexpr T * operator->() noexcept
-			{
-				return &this->obj;
-			}
-		};
+		/**
+		 * @brief Safe wrapper for HDC
+		 * 
+		 * @tparam T 
+		 */
+		template<typename T>
+		using SafeHDC = w::Safeptr<T, decltype(w::DCDeleter)>;
+
 	}
 
-	extern std::function<void(wchar_t **)> getArgsFree;
+	using ArgVecT = w::Safeptr<
+		wchar_t **,
+		decltype(
+			[](wchar_t ** obj) noexcept
+			{
+				::LocalFree(obj);
+			}
+		)
+	>;
+
 	/**
 	 * @brief Get wide-stringed argument vector from command line wide-string
 	 * 
@@ -275,7 +263,7 @@ namespace pdfv
 	 * @param argc Reference to argument vector length, will be valued in function
 	 * @return std::unique_ptr<wchar_t *, decltype(pdfv::getArgsFree)> Argument vector
 	 */
-	[[nodiscard]] std::unique_ptr<wchar_t *, decltype(pdfv::getArgsFree)> getArgs(LPWSTR cmdLine, int & argc) noexcept;
+	[[nodiscard]] ArgVecT getArgs(LPWSTR cmdLine, int & argc) noexcept;
 	
 	/**
 	 * @brief Initialise common controls

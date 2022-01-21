@@ -28,17 +28,17 @@ namespace pdfv
 		xy<int> m_pos;
 		xy<int> m_border;
 		int m_menuSize{ 0 };
-		HWND m_hwnd{ nullptr }, m_dlg{ nullptr };
+		HWND m_hwnd{ nullptr };
 		WNDCLASSEXW m_wcex{};
 		std::wstring m_title;
-		w::GDI<HFONT> m_defaultFont{ nullptr }, m_defaultFontBold{ nullptr };
+		w::SafeGDI<HFONT> m_defaultFont{ nullptr }, m_defaultFontBold{ nullptr };
 		bool m_helpAvailable{ true };
 		pdfv::Tabs m_tabs;
 		pdfv::OpenDialog m_openDialog{ 2048 };
 
-		w::GDI<HBRUSH> m_redBrush{ ::CreateSolidBrush(RGB(237, 28, 36)) };
-		w::GDI<HBRUSH> m_brightRedBrush{ ::CreateSolidBrush(RGB(255, 128, 128)) };
-		w::GDI<HBRUSH> m_darkRedBrush{ ::CreateSolidBrush(RGB(200, 0, 0)) };
+		w::SafeGDI<HBRUSH> m_redBrush{ ::CreateSolidBrush(RGB(237, 28, 36)) };
+		w::SafeGDI<HBRUSH> m_brightRedBrush{ ::CreateSolidBrush(RGB(255, 128, 128)) };
+		w::SafeGDI<HBRUSH> m_darkRedBrush{ ::CreateSolidBrush(RGB(200, 0, 0)) };
 		std::atomic<bool> m_highlighted{ false };
 		std::atomic<std::size_t> m_highlightedIdx{ 0 };
 		HANDLE m_moveThread{ nullptr };
@@ -97,6 +97,8 @@ namespace pdfv
 		 */
 		int msgLoop() const noexcept;
 
+		void close() const noexcept;
+
 		/**
 		 * @brief Enables/disable main window (unblocks/blocks input)
 		 * 
@@ -110,7 +112,7 @@ namespace pdfv
 		{
 			return this->m_wcex;
 		}
-		[[nodiscard]] constexpr const HWND & getHwnd() const noexcept
+		[[nodiscard]] constexpr HWND getHwnd() const noexcept
 		{
 			return this->m_hwnd;
 		}
@@ -135,13 +137,13 @@ namespace pdfv
 		{
 			return this->m_border;
 		}
-		[[nodiscard]] constexpr const HFONT & getDefFont() const noexcept
+		[[nodiscard]] constexpr HFONT getDefFont() const noexcept
 		{
-			return this->m_defaultFont;
+			return this->m_defaultFont.get();
 		}
-		[[nodiscard]] constexpr const HFONT & getDefFontBold() const noexcept
+		[[nodiscard]] constexpr HFONT getDefFontBold() const noexcept
 		{
-			return this->m_defaultFontBold;
+			return this->m_defaultFontBold.get();
 		}
 		
 		/**
