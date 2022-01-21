@@ -35,6 +35,7 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 		* *About dialog button is also centered*
 	* Make window size less restricted
 	* More refactoring of codebase
+	* Optimise memory usage of file open dialogs
 	* [ ] Add zooming capability
 
 * 0.3.0

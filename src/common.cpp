@@ -31,7 +31,7 @@
 [[nodiscard]] std::wstring pdfv::w::getWinText(HWND hwnd, const std::wstring & def)
 {
 	std::wstring str;
-	str.resize(2048, ' ');
+	str.resize(2048);
 	auto len = ::GetWindowTextW(hwnd, str.data(), str.length() + 1);
 	str.resize(len);
 	if (len > 0) [[likely]]
@@ -367,7 +367,7 @@ namespace pdfv
 	);
 
 	std::wstring wstr;
-	wstr.resize(len, L' ');
+	wstr.resize(len);
 
 	::MultiByteToWideChar(
 		CP_UTF8,
@@ -396,7 +396,7 @@ namespace pdfv
 	);
 
 	std::string str;
-	str.resize(len, ' ');
+	str.resize(len);
 
 	::WideCharToMultiByte(
 		CP_UTF8,
