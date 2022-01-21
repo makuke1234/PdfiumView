@@ -284,7 +284,7 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 	switch (uMsg)
 	{
 	case WM_DRAWITEM:
-		return mwnd.wOnDrawItem(reinterpret_cast<DRAWITEMSTRUCT *>(lp));
+		return mwnd.wOnDrawItem(lp);
 	case WM_ERASEBKGND:
 		return TRUE;
 	case WM_COMMAND:
@@ -340,8 +340,9 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(const HWND hwnd, const UINT uMsg, 
 	return 0;
 }
 
-LRESULT pdfv::MainWindow::wOnDrawItem(DRAWITEMSTRUCT * dis) noexcept
+LRESULT pdfv::MainWindow::wOnDrawItem(LPARAM lp) noexcept
 {
+	auto dis = reinterpret_cast<DRAWITEMSTRUCT *>(lp);
 	DEBUGPRINT("pdfv::MainWindow::wOnDrawItem(%p)\n", static_cast<void *>(dis));
 	
 	if (dis->hwndItem == this->m_tabs.m_tabshwnd)
@@ -350,7 +351,7 @@ LRESULT pdfv::MainWindow::wOnDrawItem(DRAWITEMSTRUCT * dis) noexcept
 		auto w{ dis->rcItem.right  - dis->rcItem.left };
 		auto h{ dis->rcItem.bottom - dis->rcItem.top  };
 
-		auto hdc   { ::CreateCompatibleDC(dis->hDC) };
+		auto hdc{ ::CreateCompatibleDC(dis->hDC) };
 		auto hbmBuf{ ::CreateCompatibleBitmap(dis->hDC, dis->rcItem.right, dis->rcItem.bottom) };
 		auto hbmOld{ ::SelectObject(hdc, hbmBuf) };
 

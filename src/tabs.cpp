@@ -348,6 +348,10 @@ pdfv::Tabs::Tabs(HWND hwnd, HINSTANCE hInst) noexcept
 			else if (umsg == WM_LBUTTONDOWN || umsg == WM_LBUTTONUP)
 			{
 				::SendMessageW(::GetParent(hwnd), umsg, wp, lp);
+				if (MainWindow::mwnd.m_highlighted)
+				{
+					return TRUE;
+				}
 			}
 
 			return ::DefSubclassProc(hwnd, umsg, wp, lp);

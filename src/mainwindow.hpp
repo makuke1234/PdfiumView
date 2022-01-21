@@ -54,6 +54,7 @@ namespace pdfv
 		[[nodiscard]] bool intersectsTabClose() noexcept;
 
 		friend class OtherWindow;
+		friend class Tabs;
 		/**
 		 * @brief Shows about dialog box
 		 * 
@@ -175,7 +176,7 @@ namespace pdfv
 		 */
 		static LRESULT CALLBACK windowProc(const HWND hwnd, const UINT uMsg, WPARAM wp, LPARAM lp) noexcept;
 		
-		LRESULT wOnDrawItem(DRAWITEMSTRUCT * dis) noexcept;
+		LRESULT wOnDrawItem(LPARAM lp) noexcept;
 		void wOnCommand(WPARAM wp) noexcept;
 		void wOnKeydown(WPARAM wp) noexcept;
 		void wOnMousewheel(WPARAM wp) noexcept;
