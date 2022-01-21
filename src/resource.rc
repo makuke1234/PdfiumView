@@ -10,8 +10,8 @@
  *	Icon made by Dimitry Miroliubov (https://www.flaticon.com/authors/dimitry-miroliubov)
  *	from http://www.flaticon.com/
  */
-IDI_APPLICATION ICON "appicon.ico"
-CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "Application.manifest"
+IDI_APPLICATION ICON "assets/appicon.ico"
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "assets/Application.manifest"
 
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION    VERSION_SEQUENCE
