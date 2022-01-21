@@ -73,7 +73,6 @@ namespace pdfv
 		friend class pdfv::Tabs;
 		friend class pdfv::MainWindow;
 
-		friend int WINAPI ::wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int);
 		static LRESULT CALLBACK tabProcHub(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp);
 		LRESULT tabProc(UINT uMsg, WPARAM wp, LPARAM lp);
 	};

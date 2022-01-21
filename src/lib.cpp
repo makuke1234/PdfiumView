@@ -211,16 +211,15 @@ pdfv::error::Errorcode pdfv::Pdfium::pageRender(HDC dc, pdfv::xy<int> pos, pdfv:
 
 	if (this->m_fpage != nullptr)
 	{
-		double heightfactor = FPDF_GetPageHeight(this->m_fpage) / FPDF_GetPageWidth(this->m_fpage);
+		auto heightfactor{ FPDF_GetPageHeight(this->m_fpage) / FPDF_GetPageWidth(this->m_fpage) };
 		
 		pdfv::xy<int> newsize;
-		int temp1 = size.y - 2 * pos.y;
-		int temp2 = int(heightfactor * double(size.x - 2 * pos.x));
+		auto temp1{ size.y - 2 * pos.y };
+		auto temp2{ int(heightfactor * double(size.x - 2 * pos.x)) };
 		newsize.y = std::min(temp1, temp2);
 		newsize.x = int(double(newsize.y) / heightfactor);
 
-		pos  = size - newsize;
-		pos /= 2;
+		pos = (size - newsize) / 2;
 
 		void * args[] = { this, dc, &newsize };
 		this->m_optRenderer.putPage(

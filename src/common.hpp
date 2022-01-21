@@ -74,28 +74,127 @@ namespace pdfv
 	
 	namespace w
 	{
+		/**
+		 * @brief Get the rectangle of client area
+		 * 
+		 * @param hwnd Window handle
+		 * @param def Default rectangle, empty rectangle by default
+		 * @return RECT On success client area rectangle, on failure default rectangle
+		 */
 		[[nodiscard]] RECT getCliR(HWND hwnd, RECT def = {}) noexcept;
+		/**
+		 * @brief Get the rectangle of window area
+		 * 
+		 * @param hwnd Window handle
+		 * @param def Default rectangle, empty rectangle by default
+		 * @return RECT On success window area rectangle, on failure default rectangle
+		 */
 		[[nodiscard]] RECT getWinR(HWND hwnd, RECT def = {}) noexcept;
 
+		/**
+		 * @brief Alias of getCliR
+		 * 
+		 */
 		constexpr auto getClientRect = getCliR;
+		/**
+		 * @brief Alias of getWinR
+		 * 
+		 */
 		constexpr auto getWindowRect = getWinR;
 
+		/**
+		 * @brief Get window text
+		 * 
+		 * @param hwnd Window handle
+		 * @param def Default string, empty string by default
+		 * @return std::wstring Window text, up to 2048 characters
+		 */
 		[[nodiscard]] std::wstring getWinText(HWND hwnd, const std::wstring & def = {});
 
+		/**
+		 * @brief Alias of getWinText
+		 * 
+		 */
 		constexpr auto getWindowText = getWinText;
 
+		/**
+		 * @brief Set window font
+		 * 
+		 * @param hwnd Window font
+		 * @param hfont Font handle
+		 * @param redraw If true, window will be redrawn, false by default
+		 */
 		void setFont(HWND hwnd, HFONT hfont, bool redraw = false) noexcept;
 
+		/**
+		 * @brief Move window
+		 * 
+		 * @param hwnd Window handle
+		 * @param x Horizontal position of window
+		 * @param y Vertical position of window
+		 * @param redraw If ture, window will be redrawn, false by default
+		 * @return true Success
+		 * @return false Failure
+		 */
 		bool moveWin(HWND hwnd, int x, int y, bool redraw = false) noexcept;
+		/**
+		 * @brief Move window
+		 * 
+		 * @param hwnd Window handle
+		 * @param rect New window rectangle
+		 * @param redraw If ture, window will be redrawn, false by default
+		 * @return true Success
+		 * @return false Failure
+		 */
 		bool moveWin(HWND hwnd, RECT rect, bool redraw = false) noexcept;
 
+		/**
+		 * @brief Get cursor position relative to the screen
+		 * 
+		 * @param def Default position, 0; 0 by default
+		 * @return POINT On success cursor position, default position on failure
+		 */
 		[[nodiscard]] POINT getCur(POINT def = {}) noexcept;
+		/**
+		 * @brief Get cursor position relative to the window
+		 * 
+		 * @param hwnd Window handle
+		 * @param def Default position, 0; 0 by default
+		 * @return POINT On success cursor position, default position on failure
+		 */
 		[[nodiscard]] POINT getCur(HWND hwnd, POINT def = {}) noexcept;
 
+		/**
+		 * @brief Redraws window
+		 * 
+		 * @param hwnd Window handle
+		 * @param erase Flag, determining whether the window should be erased, false by default
+		 * @return true Success
+		 * @return false Failure
+		 */
 		bool redraw(HWND hwnd, bool erase = false) noexcept;
 
+		/**
+		 * @brief Reorders windows by Z-position
+		 * 
+		 * @param hwnd Window handle of window on top
+		 * @param hbefore Window handle of window coming before hwnd
+		 * @param redraw If true, hwnd bill be redrawn, false by default
+		 * @return true Success
+		 * @return false Failure
+		 */
 		bool reorder(HWND hwnd, HWND hbefore, bool redraw = false) noexcept;
 		
+		/**
+		 * @brief Resizes window
+		 * 
+		 * @param hwnd Window handle
+		 * @param x Horizontal size
+		 * @param y Vertical size
+		 * @param redraw If true, hwnd bill be redrawn, false by default
+		 * @return true Success
+		 * @return false Failure
+		 */
 		bool resize(HWND hwnd, int x, int y, bool redraw = false) noexcept;
 
 		template<typename T>
@@ -140,7 +239,7 @@ namespace pdfv
 				}
 			}
 
-			[[nodiscard]] constexpr operator T &() noexcept
+			[[nodiscard]] constexpr operator T & () noexcept
 			{
 				return this->obj;
 			}
@@ -164,14 +263,35 @@ namespace pdfv
 	}
 
 	extern std::function<void(wchar_t **)> getArgsFree;
+	/**
+	 * @brief Get wide-stringed argument vector from command line wide-string
+	 * 
+	 * @param cmdLine Command line wide-string
+	 * @param argc Reference to argument vector length, will be valued in function
+	 * @return std::unique_ptr<wchar_t *, decltype(pdfv::getArgsFree)> Argument vector
+	 */
 	[[nodiscard]] std::unique_ptr<wchar_t *, decltype(pdfv::getArgsFree)> getArgs(LPWSTR cmdLine, int & argc) noexcept;
 	
+	/**
+	 * @brief Initialise common controls
+	 * 
+	 * @return true Success
+	 * @return false Failure
+	 */
 	[[nodiscard]] bool initCC() noexcept;
 
-	//
-	//	Data structure that represents x and y coordinate pair of a point
-	//	Provides some modern operator overloading
-	//
+	/**
+	 * @brief Alias of initCC
+	 * 
+	 */
+	constexpr auto initCommontControls = initCC;
+
+	/**
+	 * @brief Data structure that represents x, y coordinate pair of a point, provides
+	 * modern operator overloading for operations regarding coordinate pair
+	 * 
+	 * @tparam T Type of coordinate, int by default
+	 */
 	template<typename T = int>
 	struct xy
 	{
@@ -182,6 +302,11 @@ namespace pdfv
 			: x(x_), y(y_)
 		{
 		}
+		/**
+		 * @brief Constructs value pair from RECT rectangle, requires value type T to be constructible with RECT values,
+		 * calculates rectangle size
+		 * 
+		 */
 		constexpr xy(RECT r) noexcept requires std::is_constructible_v<T, decltype(RECT().left)>
 			: x(T(r.right - r.left)), y(T(r.bottom - r.top))
 		{
@@ -217,9 +342,11 @@ namespace pdfv
 			return *this;
 		}
 		~xy() noexcept = default;
-		//
-		//	Swaps current object with another class object
-		//
+		/**
+		 * @brief Swaps current object with another object
+		 * 
+		 * @param other The other object to swap with
+		 */
 		constexpr void swap(xy & other) noexcept
 		{
 			xy temp{ std::move(other) };
@@ -237,139 +364,203 @@ namespace pdfv
 		{
 			return (std::abs(x - rhs.x) <= epsilon) && (std::abs(y - rhs.y) <= epsilon);
 		}
-		//
-		//	Tells if value pairs are equal to each other
-		//
-		[[nodiscard]] constexpr bool operator==(const xy & rhs) noexcept
+		/**
+		 * @param rhs Right hand side
+		 * @return true Value pairs are equal
+		 */
+		[[nodiscard]] constexpr bool operator==(const xy & rhs) const noexcept
 		{
 			return (x == rhs.x) && (y == rhs.y);
 		}
-		//
-		//	Tells if value pairs are not equal to each other
-		//
-		[[nodiscard]] constexpr bool operator!=(const xy & rhs) noexcept
+		/**
+		 * @param rhs Right hand side
+		 * @return true Value pairs are not equal
+		 */
+		[[nodiscard]] constexpr bool operator!=(const xy & rhs) const noexcept
 		{
-			return (x != rhs.x) || (y != rhs.y);
+			return !this->operator==(rhs);
 		}
-		//
-		//	Tells if both members of current value pair are smaller than
-		//	the members of the other value pair 
-		//
-		[[nodiscard]] constexpr bool operator< (const xy & rhs) noexcept
+		/**
+		 * @param rhs Right hand side
+		 * @return true Left hand side is smaller than right hand side
+		 */
+		[[nodiscard]] constexpr bool operator< (const xy & rhs) const noexcept
 		{
 			return (x < rhs.x) && (y < rhs.y);
 		}
-		//
-		//	Tells if both members of current value pair are smaller than or
-		//	equal to the members of the other value pair 
-		//
-		[[nodiscard]] constexpr bool operator<=(const xy & rhs) noexcept
+		/**
+		 * @param rhs Right hand side
+		 * @return true Left hand side is smaller than or equal to right hand side
+		 */
+		[[nodiscard]] constexpr bool operator<=(const xy & rhs) const noexcept
 		{
 			return (x <= rhs.x) && (y <= rhs.y);
 		}
-		//
-		//	Tells if both members of current value pair are larger than
-		//	the members of the other value pair 
-		//
-		[[nodiscard]] constexpr bool operator> (const xy & rhs) noexcept
+		/**
+		 * @param rhs Right hand side
+		 * @return true Left hand side is larger than right hand side
+		 */
+		[[nodiscard]] constexpr bool operator> (const xy & rhs) const noexcept
 		{
 			return (x > rhs.x) && (y > rhs.y);
 		}
-		//
-		//	Tells if both members of current value pair are larger than or
-		//	equal to the members of the other value pair 
-		//
-		[[nodiscard]] constexpr bool operator>=(const xy & rhs) noexcept
+		/**
+		 * @param rhs Right hand side
+		 * @return true Left hand side is larger than or equal to right hand side
+		 */
+		[[nodiscard]] constexpr bool operator>=(const xy & rhs) const noexcept
 		{
 			return (x >= rhs.x) && (y >= rhs.y);
 		}
 
-		//
-		//	Adds up both members of value pairs and makes the answer a new
-		//	value pair
-		//
-		[[nodiscard]] constexpr xy operator+ (const xy & rhs) noexcept
+		/**
+		 * @brief Adds two pairs' values together, forms a new pair
+		 * 
+		 * @param rhs Right hand side
+		 * @return xy New pair
+		 */
+		[[nodiscard]] constexpr xy operator+ (const xy & rhs) const noexcept
 		{
 			return { x + rhs.x, y + rhs.y };
 		}
-		//
-		//	Subtracts both members of the other value pair from
-		//	current value pair and makes the answer a new value pair
-		//
-		[[nodiscard]] constexpr xy operator- (const xy & rhs) noexcept
+		/**
+		 * @brief Subtracts right hand side pair's values from left hand side pair's values, forms a new pair
+		 * 
+		 * @param rhs Right hand side
+		 * @return xy New pair
+		 */
+		[[nodiscard]] constexpr xy operator- (const xy & rhs) const noexcept
 		{
 			return { x - rhs.x, y - rhs.y };
 		}
-		//
-		//	Multiplies both members of the other value pair with current
-		//	value pair members and makes the answer a new value pair
-		//
-		[[nodiscard]] constexpr xy operator* (const xy & rhs) noexcept
+		/**
+		 * @brief Multiplies two pairs' values together, forms a new pair
+		 * 
+		 * @param rhs Right hand side
+		 * @return xy New pair
+		 */
+		[[nodiscard]] constexpr xy operator* (const xy & rhs) const noexcept
 		{
 			return { x * rhs.x, y * rhs.y };
 		}
-		//
-		//	Divides both members of the current value pair with the members
-		//	of the other value pair and makes the answer a new value pair
-		//
-		[[nodiscard]] constexpr xy operator/ (const xy & rhs) noexcept
+		/**
+		 * @brief Divides right hand side pair's values from left hand side pair's values, forms a new pair
+		 * 
+		 * @param rhs Right hand side
+		 * @return xy New pair
+		 */
+		[[nodiscard]] constexpr xy operator/ (const xy & rhs) const noexcept
 		{
 			return { x / rhs.x, y / rhs.y };
 		}
+
+		/**
+		 * @brief Adds a value to both members of the value pair, forms a new pair
+		 * 
+		 * @param rhs Right hand side
+		 * @return xy New pair
+		 */
+		[[nodiscard]] constexpr xy operator+ (const T rhs) const noexcept
+		{
+			return { x + rhs, y + rhs };
+		}
+		/**
+		 * @brief Subtracts a value from both members of the value pair, forms a new pair
+		 * 
+		 * @param rhs Right hand side
+		 * @return xy New pair
+		 */
+		[[nodiscard]] constexpr xy operator- (const T rhs) const noexcept
+		{
+			return { x - rhs, y - rhs };
+		}
+		/**
+		 * @brief Multiplies a value with both members of the value pair, forms a new pair
+		 * 
+		 * @param rhs Right hand side
+		 * @return xy New pair
+		 */
+		[[nodiscard]] constexpr xy operator* (const T rhs) const noexcept
+		{
+			return { x * rhs, y * rhs };
+		}
+		/**
+		 * @brief Divides a value from both members of the value pair, forms a new pair
+		 * 
+		 * @param rhs Right hand side
+		 * @return xy New pair
+		 */
+		[[nodiscard]] constexpr xy operator/ (const T rhs) const noexcept
+		{
+			return { x / rhs, y / rhs };
+		}
 		
-		//
-		//	Adds both members of the other value pair to the current value pair
-		//
+		/**
+		 * @brief Adds both members of the other value pair to the current value pair
+		 * 
+		 * @param rhs Right hand side
+		 * @return xy&
+		 */
 		constexpr xy & operator+=(const xy & rhs) noexcept
 		{
 			x += rhs.x;
 			y += rhs.y;
 			return *this;
 		}
-		//
-		//	Subtracts both members of the other value pair from the
-		//	current value pair
-		//
+		/**
+		 * @brief Subtracts both members of the other value pair from the current value pair
+		 * 
+		 * @param rhs Right hand side
+		 * @return xy&
+		 */
 		constexpr xy & operator-=(const xy & rhs) noexcept
 		{
 			x -= rhs.x;
 			y -= rhs.y;
 			return *this;
 		}
-		//
-		//	Multiplies the current value pair members
-		//	with the other value pair members
-		//
+		/**
+		 * @brief Multiplies both members of the other value pair with the current value pair
+		 * 
+		 * @param rhs Right hand side
+		 * @return constexpr xy& 
+		 */
 		constexpr xy & operator*=(const xy & rhs) noexcept
 		{
 			x *= rhs.x;
 			y *= rhs.y;
 			return *this;
 		}
-		//
-		//	Divides the other value pair members
-		//	from the current value pair
-		//
+		/**
+		 * @brief Divides both members of the other value pair from the current value pair
+		 * 
+		 * @param rhs Right hand side
+		 * @return constexpr xy& 
+		 */
 		constexpr xy & operator/=(const xy & rhs) noexcept
 		{
 			x /= rhs.x;
 			y /= rhs.y;
 			return *this;
 		}
-		//
-		//	Bitshifts the current value pair members to left
-		//	with the members of the other value pair
-		//
+		/**
+		 * @brief Bitshifts the current value pair members to left with other value pair members
+		 * 
+		 * @param rhs Right hand side
+		 * @return constexpr xy& 
+		 */
 		constexpr xy & operator<<=(const xy & rhs) noexcept requires std::is_integral_v<T>
 		{
 			x <<= rhs.x;
 			y <<= rhs.y;
 			return *this;
 		}
-		//
-		//	Bitshift the current value pair members to right
-		//	with the members of the other value pair
-		//
+		/**
+		 * @brief Bitshifts the current value pair members to right with other value pair members
+		 * 
+		 * @param rhs Right hand side
+		 * @return constexpr xy& 
+		 */
 		constexpr xy & operator>>=(const xy & rhs) noexcept requires std::is_integral_v<T>
 		{
 			x >>= rhs.x;
@@ -378,56 +569,72 @@ namespace pdfv
 		}
 
 
-		//
-		//	Adds a value to both members of the current value pair
-		//
+		/**
+		 * @brief Adds a value to both members of the value pair
+		 * 
+		 * @param rhs Right hand side
+		 * @return xy&
+		 */
 		constexpr xy & operator+=(const T & rhs) noexcept
 		{
 			x += rhs;
 			y += rhs;
 			return *this;
 		}
-		//
-		//	Subtracts a value from both members of the current value pair
-		//
+		/**
+		 * @brief Subtracts a value from both members of the value pair
+		 * 
+		 * @param rhs Right hand side
+		 * @return xy&
+		 */
 		constexpr xy & operator-=(const T & rhs) noexcept
 		{
 			x -= rhs;
 			y -= rhs;
 			return *this;
 		}
-		//
-		//	Multiplies a value with both members of the current value pair
-		//
+		/**
+		 * @brief Multiplies a value with both members of the value pair
+		 * 
+		 * @param rhs Right hand side
+		 * @return xy&
+		 */
 		constexpr xy & operator*=(const T & rhs) noexcept
 		{
 			x *= rhs;
 			y *= rhs;
 			return *this;
 		}
-		//
-		//	Divides a value from both members of the current value pair
-		//
+		/**
+		 * @brief Divides a value from both members of the value pair
+		 * 
+		 * @param rhs Right hand side
+		 * @return xy&
+		 */
 		constexpr xy & operator/=(const T & rhs) noexcept
 		{
 			x /= rhs;
 			y /= rhs;
 			return *this;
 		}
-		//
-		//	Bitshifts the current value pair members to left
-		//	with the given value
-		//
+		/**
+		 * @brief Bitshifts both members of the value pair to left by a integral value
+		 * 
+		 * @param rhs Right hand side
+		 * @return xy&
+		 */
 		constexpr xy & operator<<=(const T & rhs) noexcept requires std::is_integral_v<T>
 		{
 			x <<= rhs;
 			y <<= rhs;
 			return *this;
 		}
-		//
-		//	Bitshift the current value pair members to right
-		//	with the given value
-		//
+		/**
+		 * @brief Bitshifts both members of the value pair to right by a integral value
+		 * 
+		 * @param rhs Right hand side
+		 * @return xy&
+		 */
 		constexpr xy & operator>>=(const T & rhs) noexcept requires std::is_integral_v<T>
 		{
 			x >>= rhs;
@@ -436,6 +643,12 @@ namespace pdfv
 		}
 	};
 
+	/**
+	 * @brief Makes xy<> coordinate pair from RECT, calculates size of rectangle
+	 * 
+	 * @param r Rectangle object
+	 * @return xy<decltype(RECT().left)> 
+	 */
 	[[nodiscard]] constexpr xy<decltype(RECT().left)> make_xy(RECT r) noexcept
 	{
 		return r;
@@ -443,53 +656,73 @@ namespace pdfv
 	
 	extern xy<f> dpi;
 	
-	//
-	//	Calculates correct screen coordinate according to a given coordinate
-	//	and a given scaling factor
-	//
-	[[nodiscard]] constexpr int dip(const int size, const f dip) noexcept
+	/**
+	 * @brief Calculates correct screen coordinate using DI pixel and DPI, performs rounding
+	 * 
+	 * @param size DI pixel
+	 * @param dpi DPI scaling factor
+	 * @return int Screen coordinate
+	 */
+	[[nodiscard]] constexpr int dip(const int size, const f dpi) noexcept
 	{
-		return int(f(size) * dip);
+		return int(f(size) * dpi + 0.5f);
 	}
-	//
-	//	Calcluates correct screen coordinate pair according
-	//	to a value pair and a scaling factor pair
-	//
-	[[nodiscard]] constexpr xy<int> dip(const xy<int> size, const xy<f> dip) noexcept
+	/**
+	 * @brief Calculates correct screen coordinate pair using DI pixel pair and DPI pair, performs rounding
+	 * 
+	 * @param size DI pixel pair
+	 * @param dpi DPI scaling factor pair
+	 * @return int Screen coordinate pair
+	 */
+	[[nodiscard]] constexpr xy<int> dip(const xy<int> size, const xy<f> dpi) noexcept
 	{
-		return {
-			int(f(size.x) * dip.x),
-			int(f(size.y) * dip.y)
-		};
-	}
-
-	[[nodiscard]] constexpr int dipfont(const int size, const f dip) noexcept
-	{
-		return int(-f(size) * dip * 96.0f / 72.0f);
+		return xy<int>(xy<f>(size) * dpi + 0.5f);
 	}
 
-	//
-	//	Registers any windows API class and fills missing details of the
-	//	WNDCLASSEXW data struct if any.
-	//	The return value shall not be ignored.
-	//
+	/**
+	 * @brief Calculates corrent screen font size using DI font size in pt and DPI, performs rounding
+	 * 
+	 * @param size Font size size in points (pt)
+	 * @param dpi DPI scaling factor
+	 * @return int Screen coordinate 
+	 */
+	[[nodiscard]] constexpr int dipfont(const int size, const f dpi) noexcept
+	{
+		return -int(f(size) * dpi * 96.0f / 72.0f + 0.5f);
+	}
+
+	/**
+	 * @brief Register any Win32 API class and fills missing fields of WNDCLASSEXW data structure
+	 * if any
+	 * 
+	 * @param wcex Reference to window class extended structure
+	 * @return ATOM Non-zero on success
+	 */
 	[[nodiscard]] ATOM registerClasses(WNDCLASSEXW & wcex) noexcept;
-	//
-	//	Asks user info with a given message and window title in a
-	//	dialog-box-like window
-	//	Information from the user is returned as std::wstring
-	//
+	/**
+	 * @brief Asks user info with a given message and window title in a dialog-like window
+	 * 
+	 * @param message Message to user
+	 * @param title Window title
+	 * @return std::wstring Information string the user entered
+	 */
 	[[nodiscard]] std::wstring askInfo(std::wstring_view message, std::wstring_view title) noexcept;
 
 	namespace utf
 	{
-		//
-		//	Converts UTF-8 string to UTF-16 (Unicode) string
-		//
+		/**
+		 * @brief Converts UTF-8 string to UTF-16 string
+		 * 
+		 * @param str UTF-8 string
+		 * @return std::wstring UTF-16 string
+		 */
 		[[nodiscard]] std::wstring conv(std::string_view str);
-		//
-		//	Converts UTF-16 (Unicode) string to UTF-8 string
-		//
+		/**
+		 * @brief Converts UTF-16 string to UTF-8 string
+		 * 
+		 * @param wstr UTF-16 string
+		 * @return std::string UTF-8 string
+		 */
 		[[nodiscard]] std::string conv(std::wstring_view wstr);
 	}
 }

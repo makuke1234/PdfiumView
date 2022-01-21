@@ -5,7 +5,7 @@ namespace pdfv
 {
 	namespace error
 	{
-		enum Errorcode : std::uint32_t
+		enum Errorcode : int
 		{
 			success,
 			noerror = success,
@@ -26,9 +26,10 @@ namespace pdfv
 			max_error
 		};
 
-		//
-		// 	An array of error messages encoded in UTF-16 (Windows Unicode)
-		//
+		/**
+		 * @brief An array of error messages encoded in UTF-16 (Windows Unicode)
+		 * 
+		 */
 		extern const wchar_t * errMsgs[max_error];
 
 		/**
