@@ -257,7 +257,7 @@ pdfv::error::Errorcode pdfv::Pdfium::pageRender(HDC dc, pdfv::xy<int> pos, pdfv:
 				auto hbmold{ ::SelectObject(memdc, render) };
 
 				RECT r{ .left = 0, .top = 0, .right = size->x, .bottom = size->y };
-				::FillRect(memdc, &r, reinterpret_cast<HBRUSH>(COLOR_WINDOW));
+				::FillRect(memdc, &r, static_cast<HBRUSH>(::GetStockObject(WHITE_BRUSH)));
 
 				FPDF_RenderPage(memdc, self->m_fpage, 0, 0, size->x, size->y, 0, 0);
 
