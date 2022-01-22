@@ -4,6 +4,8 @@
 #include "opendialog.hpp"
 
 #include <atomic>
+#include <array>
+#include <string>
 
 namespace pdfv
 {
@@ -165,9 +167,10 @@ namespace pdfv
 		 */
 		int message(LPCWSTR message = L"", UINT type = MB_OK) const noexcept;
 		
-		static constexpr UINT WM_LLMOUSEHOOK{  WM_USER };
-		static constexpr UINT WM_BRINGTOFRONT{ WM_USER + 1 };
-		static constexpr UINT WM_TABMOUSEMOVE{ WM_USER + 2 };
+		static constexpr UINT WM_LLMOUSEHOOK   { WM_USER };
+		static constexpr UINT WM_BRINGTOFRONT  { WM_USER + 1 };
+		static constexpr UINT WM_TABMOUSEMOVE  { WM_USER + 2 };
+		static constexpr UINT WM_SPECIALKEYDOWN{ WM_USER + 3 };
 		
 	private:
 		/**
@@ -178,6 +181,7 @@ namespace pdfv
 		
 		LRESULT wOnDrawItem(LPARAM lp) noexcept;
 		void wOnCommand(WPARAM wp) noexcept;
+		std::array<bool, 256> m_keyDown{};
 		void wOnKeydown(WPARAM wp) noexcept;
 		void wOnMousewheel(WPARAM wp) noexcept;
 		void wOnLButtonDown(WPARAM wp, LPARAM lp) noexcept;

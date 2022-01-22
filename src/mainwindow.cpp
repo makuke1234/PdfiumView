@@ -292,7 +292,13 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(HWND hwnd, UINT uMsg, WPARAM wp, L
 		mwnd.wOnCommand(wp);
 		break;
 	case WM_KEYDOWN:
+		mwnd.m_keyDown[wp] = true;
+		[[fallthrough]];
+	case WM_SPECIALKEYDOWN:
 		mwnd.wOnKeydown(wp);
+		break;
+	case WM_KEYUP:
+		mwnd.m_keyDown[wp] = false;
 		break;
 	case WM_MOUSEWHEEL:
 		mwnd.wOnMousewheel(wp);
@@ -508,20 +514,33 @@ void pdfv::MainWindow::wOnMousewheel(WPARAM wp) noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::wOnMousewheel(%u)\n", wp);
 	static int delta{ 0 };
-	delta += int(GET_WHEEL_DELTA_WPARAM(wp));
 
-	if (std::abs(delta) >= WHEEL_DELTA)
+	auto p{ w::getCur() };
+	auto pt1{ xy<int>{ p.x, p.y } - mwnd.m_pos };
+	auto pt2{ mwnd.m_tabs.m_pos  + mwnd.m_tabs.m_offset };
+	auto sz { mwnd.m_tabs.m_size - mwnd.m_tabs.m_offset };
+	if (!(pt1.x >= pt2.x && pt1.x <= (pt2.x + sz.x) &&
+		pt1.y >= pt2.y && pt1.y <= (pt2.y + sz.y)))
 	{
-		auto p{ w::getCur() };
-		auto pt1{ xy<int>{ p.x, p.y } - mwnd.m_pos };
-		auto pt2{ mwnd.m_tabs.m_pos  + mwnd.m_tabs.m_offset };
-		auto sz { mwnd.m_tabs.m_size - mwnd.m_tabs.m_offset };
+		// Out of bounds
+		return;
+	}
 
+	auto newdelta{ int(GET_WHEEL_DELTA_WPARAM(wp)) };
+	DEBUGPRINT("new wheel delta %d\n", newdelta);
+	bool controlDown{ (LOWORD(wp) & MK_CONTROL) != 0 };
+	
+	if (controlDown)
+	{
+		delta = 0;
+	}
+	else
+	{
 		auto dir{ delta > 0 ? SB_LINEUP : SB_LINEDOWN };
-		if (pt1.x >= pt2.x && pt1.x <= (pt2.x + sz.x) &&
-			pt1.y >= pt2.y && pt1.y <= (pt2.y + sz.y))
+		delta += newdelta;
+		if (std::abs(delta) >= WHEEL_DELTA)
 		{
-			for (int i = std::abs(delta); i > 0; i -= WHEEL_DELTA)
+			for (int i = std::abs(delta); i >= WHEEL_DELTA; i -= WHEEL_DELTA)
 			{
 				::SendMessageW(
 					mwnd.m_tabs.m_tabs[mwnd.m_tabs.m_tabindex]->tabhandle,
@@ -529,10 +548,11 @@ void pdfv::MainWindow::wOnMousewheel(WPARAM wp) noexcept
 					MAKELONG(dir, 0),
 					0
 				);
+				delta += (dir == SB_LINEDOWN) ? WHEEL_DELTA : -WHEEL_DELTA;
 			}
 		}
-		delta %= ((delta < 0) * -1 + (delta >= 0)) * WHEEL_DELTA;
 	}
+	DEBUGPRINT("pdfv::MainWindow::wOnMouseWheel end!!!!\n");
 }
 void pdfv::MainWindow::wOnLButtonDown([[maybe_unused]] WPARAM wp, [[maybe_unused]] LPARAM lp) noexcept
 {
@@ -570,7 +590,7 @@ LRESULT pdfv::MainWindow::wOnNotify(LPARAM lp) noexcept
 	case TCN_KEYDOWN:
 	{
 		auto kd = reinterpret_cast<NMTCKEYDOWN *>(lp);
-		::SendMessageW(this->getHwnd(), WM_KEYDOWN, kd->wVKey, kd->flags);
+		::SendMessageW(this->getHwnd(), MainWindow::WM_SPECIALKEYDOWN, kd->wVKey, kd->flags);
 		break;
 	}
 	case TCN_SELCHANGING:
