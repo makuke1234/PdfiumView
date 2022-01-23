@@ -109,6 +109,22 @@ void pdfv::w::openWeb(LPCWSTR url) noexcept
 	::ShellExecuteW(nullptr, L"open", url, nullptr, nullptr, SW_SHOWNORMAL);
 }
 
+bool pdfv::w::status::setParts(HWND statusbar, const std::vector<int> & edges) noexcept
+{
+	// Number of edges can't be greater than 256
+	if (edges.size() > 256) [[unlikely]]
+	{
+		return false;
+	}
+	return ::SendMessageW(statusbar, SB_SETPARTS, edges.size(), reinterpret_cast<LPARAM>(edges.data())) ? true : false;
+}
+bool pdfv::w::status::setText(HWND statusbar, int idx, DrawOp drawop, LPCWSTR str) noexcept
+{
+	return ::SendMessageW(statusbar, SB_SETTEXT, idx | int(drawop), reinterpret_cast<LPARAM>(str)) ? true : false;
+}
+
+
+
 
 [[nodiscard]] pdfv::ArgVecT pdfv::getArgs(LPWSTR cmdLine, int & argc) noexcept
 {

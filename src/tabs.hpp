@@ -63,6 +63,7 @@ namespace pdfv
 		LRESULT tabObjectProc(UINT uMsg, WPARAM wp, LPARAM lp);
 
 		void updateScrollbar() noexcept;
+		void updatePageCounter() const noexcept;
 	};
 
 	class Tabs

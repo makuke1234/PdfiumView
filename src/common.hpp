@@ -24,6 +24,7 @@
 #include "version.hpp"
 #include "resource.hpp"
 #include "safeptr.hpp"
+#include "enumhelper.hpp"
 
 #define APP_DEFSIZE_X 350
 #define APP_DEFSIZE_Y 200
@@ -257,7 +258,31 @@ namespace pdfv
 		template<typename T>
 		using SafeHDC = w::Safeptr<T, decltype(w::DCDeleter)>;
 
+		namespace status
+		{
+			bool setParts(HWND statusbar, const std::vector<int> & edges) noexcept;
+			
+			enum class DrawOp : int
+			{
+				def                = 0,
+				noBorders          = SBT_NOBORDERS,
+				ownerDraw          = SBT_OWNERDRAW,
+				popOut             = SBT_POPOUT,
+				rtlReading         = SBT_RTLREADING,
+				rightToLeftReading = rtlReading,
+				noTabParsing       = SBT_NOTABPARSING,
+			};
+			using DrawingOperation = DrawOp;
+
+			bool setText(HWND statusbar, int idx, DrawOp drawop, LPCWSTR str) noexcept;
+
+		}
 	}
+	
+	// Enable operator overloads on Drawing operations
+	template<> struct Enumhelper_enabler<pdfv::w::status::DrawOp>
+	{
+	};
 
 	using ArgVecT = w::Safeptr<
 		wchar_t **,

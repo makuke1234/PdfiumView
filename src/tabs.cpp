@@ -92,6 +92,7 @@ void pdfv::TabObject::updatePDF() noexcept
 {
 	DEBUGPRINT("pdfv::TabObject::updatePDF()\n");
 	this->updateScrollbar();
+	this->updatePageCounter();
 }
 
 LRESULT CALLBACK pdfv::TabObject::tabObjectProcHub(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp)
@@ -209,6 +210,7 @@ LRESULT pdfv::TabObject::tabObjectProc(UINT uMsg, WPARAM wp, LPARAM lp)
 			this->page = yNewPos;
 
 			this->second.pageLoad(this->page + 1);
+			this->updatePageCounter();
 			w::redraw(this->tabhandle);
 
 			SCROLLINFO si{};
@@ -233,6 +235,9 @@ LRESULT pdfv::TabObject::tabObjectProc(UINT uMsg, WPARAM wp, LPARAM lp)
 		::DestroyWindow(this->tabhandle);
 		this->tabhandle = nullptr;
 		break;
+	case WM_CREATE:
+		this->updatePageCounter();
+		break;
 	default:
 		return ::DefWindowProcW(this->tabhandle, uMsg, wp, lp);
 	}
@@ -255,6 +260,20 @@ void pdfv::TabObject::updateScrollbar() noexcept
 		si.nPage  = 1;
 		si.nPos   = this->page;
 		::SetScrollInfo(this->tabhandle, SB_VERT, &si, TRUE);
+	}
+}
+void pdfv::TabObject::updatePageCounter() const noexcept
+{
+	if (this->second.pdfExists())
+	{
+		setText(
+			window.getStatusHandle(), 1, w::status::DrawOp::def,
+			(std::wstring(L"Page: ") + std::to_wstring(this->second.pageGetNum()) + L'/' + std::to_wstring(this->second.pageGetCount())).c_str()
+		);
+	}
+	else
+	{
+		setText(window.getStatusHandle(), 1, w::status::DrawOp::def, L"Page: NA");
 	}
 }
 
@@ -521,6 +540,7 @@ void pdfv::Tabs::selChange() noexcept
 	{
 		this->m_tabs[oldidx]->show(false);
 		this->resize(this->m_size);
-		this->m_tabs[this->m_tabindex]->show();
 	}
+	this->m_tabs[this->m_tabindex]->show();
+	this->m_tabs[this->m_tabindex]->updatePageCounter();
 }

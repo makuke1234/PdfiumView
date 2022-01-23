@@ -7,12 +7,12 @@ pdfv::MainWindow pdfv::MainWindow::mwnd;
 
 [[nodiscard]] bool pdfv::MainWindow::intersectsTabClose() noexcept
 {
-	auto p{ w::getCur(this->m_hwnd) };
+	auto p{ w::getCur(this->getHandle()) };
 
 	for (std::size_t i = 0; i < this->m_tabs.size(); ++i)
 	{
 		RECT r;
-		TabCtrl_GetItemRect(this->m_tabs.m_tabshwnd, i, &r);
+		TabCtrl_GetItemRect(this->m_tabs.getHandle(), i, &r);
 		auto closeR{ Tabs::s_calcCloseButton(r) };
 
 		if (p.x >= closeR.left && p.x <= closeR.right &&
@@ -37,6 +37,12 @@ void pdfv::MainWindow::aboutBox() noexcept
 		&MainWindow::aboutProc,
 		reinterpret_cast<LPARAM>(this)
 	);
+}
+
+void pdfv::MainWindow::setStatusParts() const noexcept
+{
+	auto w{ this->m_usableArea.x };
+	w::status::setParts(this->m_statushwnd, { w - dip(200, dpi.x), w - dip(17, dpi.x) });
 }
 
 pdfv::MainWindow::MainWindow() noexcept
@@ -168,7 +174,7 @@ pdfv::MainWindow::~MainWindow() noexcept
 		this->m_hInst,
 		const_cast<wchar_t *>(fname)
 	);
-	if (this->m_hwnd == nullptr) [[unlikely]]
+	if (this->getHandle() == nullptr) [[unlikely]]
 	{
 		error::lastErr = error::window;
 		return false;
@@ -177,20 +183,20 @@ pdfv::MainWindow::~MainWindow() noexcept
 	// Add "about" to system menu (menu when caption bar is right-clicked)
 	if (this->m_helpAvailable) [[likely]]
 	{
-		auto hSysMenu{ ::GetSystemMenu(this->m_hwnd, false) };
+		auto hSysMenu{ ::GetSystemMenu(this->getHandle(), false) };
 		::InsertMenuW(hSysMenu, 5, MF_BYPOSITION | MF_SEPARATOR, 0, nullptr);
 		::InsertMenuW(hSysMenu, 6, MF_BYPOSITION, IDM_HELP_ABOUT, L"&About");
 	}
 	else [[unlikely]]
 	{
-		::EnableMenuItem(::GetMenu(this->m_hwnd), IDM_HELP_ABOUT, MF_DISABLED);
+		::EnableMenuItem(::GetMenu(this->getHandle()), IDM_HELP_ABOUT, MF_DISABLED);
 	}
 	this->m_hAccelerators = ::LoadAcceleratorsW(this->m_hInst, MAKEINTRESOURCEW(IDR_ACCELERATOR1));
 
-	::ShowWindow(this->m_hwnd, nCmdShow);
+	::ShowWindow(this->getHandle(), nCmdShow);
 	// Good practise
-	::UpdateWindow(this->m_hwnd);
-	
+	::UpdateWindow(this->getHandle());
+
 	return true;
 }
 
@@ -235,9 +241,9 @@ int pdfv::MainWindow::msgLoop() const noexcept
 		}
 		else [[likely]]
 		{
-			if (!::TranslateAcceleratorW(this->m_hwnd, this->m_hAccelerators, &msg))
+			if (!::TranslateAcceleratorW(this->getHandle(), this->m_hAccelerators, &msg))
 			{
-				if (!::IsDialogMessageW(this->m_hwnd, &msg))
+				if (!::IsDialogMessageW(this->getHandle(), &msg))
 				{
 					::TranslateMessage(&msg);
 					::DispatchMessageW(&msg);
@@ -251,9 +257,9 @@ int pdfv::MainWindow::msgLoop() const noexcept
 
 void pdfv::MainWindow::close() const noexcept
 {
-	if (this->m_hwnd != nullptr) [[likely]]
+	if (this->getHandle() != nullptr) [[likely]]
 	{
-		::SendMessageW(this->m_hwnd, WM_CLOSE, 0, 0);
+		::SendMessageW(this->getHandle(), WM_CLOSE, 0, 0);
 	}
 }
 
@@ -261,24 +267,24 @@ void pdfv::MainWindow::close() const noexcept
 void pdfv::MainWindow::enable(bool enable) const noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::enable(%d)\n", enable);
-	::EnableWindow(this->m_hwnd, enable);
+	::EnableWindow(this->getHandle(), enable);
 }
 void pdfv::MainWindow::setTitle(std::wstring_view newTitle)
 {
 	DEBUGPRINT("pdfv::MainWindow::setTitle(%p)\n", static_cast<const void *>(newTitle.data()));
 	this->m_title = newTitle;
-	::SetWindowTextW(this->m_hwnd, this->m_title.c_str());
+	::SetWindowTextW(this->getHandle(), this->m_title.c_str());
 }
 
 int pdfv::MainWindow::message(LPCWSTR message, LPCWSTR msgtitle, UINT type) const noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::message(%p, %p, %u)\n", static_cast<const void *>(message), static_cast<const void *>(msgtitle), type);
-	return ::MessageBoxW(this->m_hwnd, message, msgtitle, type);
+	return ::MessageBoxW(this->getHandle(), message, msgtitle, type);
 }
 int pdfv::MainWindow::message(LPCWSTR message, UINT type) const noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::message(%p, %u)\n", static_cast<const void *>(message), type);
-	return ::MessageBoxW(this->m_hwnd, message, this->m_title.c_str(), type);
+	return ::MessageBoxW(this->getHandle(), message, this->m_title.c_str(), type);
 }
 
 LRESULT CALLBACK pdfv::MainWindow::windowProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp) noexcept
@@ -423,7 +429,7 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 	switch (LOWORD(wp))
 	{
 	case IDM_FILE_OPEN:
-		if (std::wstring file; this->m_openDialog.open(this->m_hwnd, file))
+		if (std::wstring file; this->m_openDialog.open(this->getHandle(), file))
 		{
 			// Open the PDF
 			this->openPdfFile(file);
@@ -436,7 +442,7 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 		}
 		mwnd.m_keyDown[L'W'] = true;
 		// Close current tab
-		::SendMessageW(this->m_hwnd, WM_COMMAND, IDM_LIMIT + this->m_tabs.m_tabindex, 0);
+		::SendMessageW(this->getHandle(), WM_COMMAND, IDM_LIMIT + this->m_tabs.m_tabindex, 0);
 		break;
 	case IDM_FILE_EXIT:
 		this->close();
@@ -655,6 +661,7 @@ void pdfv::MainWindow::wOnSize() noexcept
 	DEBUGPRINT("pdfv::MainWindow::wOnSize()\n");
 	this->m_usableArea = w::getCliR(this->getHandle());
 
+
 	this->m_totalArea = w::getWinR(this->getHandle());
 	this->m_border = this->m_totalArea - this->m_usableArea;
 	this->m_border.y -= this->m_menuSize;
@@ -662,6 +669,9 @@ void pdfv::MainWindow::wOnSize() noexcept
 	auto statusr{ w::getCliR(this->m_statushwnd) };
 	this->m_tabs.resize(this->m_usableArea - xy<int>{ 0, statusr.bottom - statusr.top });
 	w::resize(this->m_statushwnd, 0, 0);
+	
+	// Set status bar parts
+	this->setStatusParts();
 }
 void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
 {
@@ -695,6 +705,9 @@ void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
 
 	clir = w::getCliR(hwnd);
 	auto statusr{ w::getCliR(this->m_statushwnd) };
+
+	this->setStatusParts();
+
 	clir.bottom = clir.top + (clir.bottom - clir.top) - (statusr.bottom - statusr.top);
 
 	this->m_tabs = Tabs(hwnd, this->getHinst(), clir);
@@ -765,17 +778,17 @@ void pdfv::MainWindow::wOnCopydata(LPARAM lp) noexcept
 void pdfv::MainWindow::wOnBringToFront() noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::wOnBringToFront()\n");
-	::ShowWindow(this->m_hwnd, SW_RESTORE);
+	::ShowWindow(this->getHandle(), SW_RESTORE);
 	HWND topWnd{ ::GetForegroundWindow() };
 
-	DWORD dwMyID { ::GetWindowThreadProcessId(this->m_hwnd, nullptr) };
+	DWORD dwMyID { ::GetWindowThreadProcessId(this->getHandle(), nullptr) };
 	DWORD dwCurID{ ::GetWindowThreadProcessId(topWnd, nullptr) };
 	::AttachThreadInput(dwCurID, dwMyID, TRUE);
-	::SetWindowPos(this->m_hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
-	::SetWindowPos(this->m_hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
-	::SetForegroundWindow(this->m_hwnd);
-	::SetFocus(this->m_hwnd);
-	::SetActiveWindow(this->m_hwnd);
+	::SetWindowPos(this->getHandle(), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+	::SetWindowPos(this->getHandle(), HWND_NOTOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
+	::SetForegroundWindow(this->getHandle());
+	::SetFocus(this->getHandle());
+	::SetActiveWindow(this->getHandle());
 	::AttachThreadInput(dwCurID, dwMyID, FALSE);
 }
 
@@ -804,7 +817,7 @@ INT_PTR CALLBACK pdfv::MainWindow::aboutProc(HWND hwnd, UINT uMsg, WPARAM wp, LP
 
 		// Re-position about box
 		auto r1{ w::getWinR(hwnd) };
-		auto r2{ w::getWinR(self->m_hwnd) };
+		auto r2{ w::getWinR(self->getHandle()) };
 
 		// Move dialog to the center of parent window
 		w::moveWin(

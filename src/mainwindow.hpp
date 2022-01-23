@@ -64,6 +64,8 @@ namespace pdfv
 		void aboutBox() noexcept;
 		std::wstring m_aboutText{ DEFAULT_ABOUT_TEXT };
 
+		void setStatusParts() const noexcept;
+
 	public:
 		//
 		//	A singleton instance of the class supported by a private constructor
@@ -118,6 +120,10 @@ namespace pdfv
 		[[nodiscard]] constexpr HWND getHandle() const noexcept
 		{
 			return this->m_hwnd;
+		}
+		[[nodiscard]] constexpr HWND getStatusHandle() const noexcept
+		{
+			return this->m_statushwnd;
 		}
 		[[nodiscard]] constexpr HINSTANCE getHinst() const noexcept
 		{

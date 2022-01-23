@@ -92,4 +92,14 @@ namespace pdfv::concepts
 	 */
 	template<typename T>
 	concept pointer = std::is_pointer_v<T>;
+
+
+	template<typename T>
+	concept enum_concept = std::is_enum_v<T>;
+
+	template<typename T>
+	concept enum_nonclass = enum_concept<T> && std::is_convertible_v<T, std::underlying_type_t<T>>;
+
+	template<typename T>
+	concept enum_class = enum_concept<T> && !std::is_convertible_v<T, std::underlying_type_t<T>>;
 }
