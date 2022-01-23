@@ -30,14 +30,21 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 
 # Changelog
 
-* 0.4 (planned)
+* 0.5 (planned)
+	* [ ] Add zooming capability
+
+* 0.4
 	* Make about dialog always centered
 		* *About dialog button is also centered*
 	* Make window size less restricted
 	* More refactoring of codebase
 	* Optimise memory usage of file open dialogs
 	* Fix annoying bug with tab becoming active every time attempting to close it
-	* [ ] Add zooming capability
+	* Fix bug with scrolling multiple pages at once with some scrollwheels
+	* Prevent key spamming on tab closing
+	* Add status bar
+	* Update PDFium library
+	* Compress icon
 
 * 0.3.0
 	* Develop about dialog

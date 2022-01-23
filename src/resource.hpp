@@ -23,6 +23,8 @@
 #define ABOUTDLG_HEIGHT 160
 #define DLG_MARGIN 7
 
+#define IDC_STATUSBAR 210
+
 
 #define ID_CLOSE 40001
 

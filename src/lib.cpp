@@ -153,7 +153,7 @@ pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(u8 * && data, std::size_t length, s
 		s_errorHappened = true;
 		if (auto err{ this->getLastError() }; err == error::pdf_password)
 		{
-			auto ans{ utf::conv(askInfo(L"Enter password:", MainWindow::mwnd.getTitle())) };
+			auto ans{ utf::conv(askInfo(L"Enter password:", window.getTitle())) };
 			this->m_fdoc = FPDF_LoadMemDocument(this->m_buf.get(), length, ans.c_str());
 			if (this->m_fdoc == nullptr) [[unlikely]]
 			{

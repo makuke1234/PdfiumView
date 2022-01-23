@@ -2,6 +2,7 @@
 
 #include <vector>
 
+// Initialise static class member variable
 pdfv::MainWindow pdfv::MainWindow::mwnd;
 
 [[nodiscard]] bool pdfv::MainWindow::intersectsTabClose() noexcept
@@ -136,7 +137,7 @@ pdfv::MainWindow::~MainWindow() noexcept
 		return false;
 	}
 
-	this->m_wcex.lpfnWndProc   = &pdfv::TabObject::tabProcHub;
+	this->m_wcex.lpfnWndProc   = &pdfv::TabObject::tabObjectProcHub;
 	this->m_wcex.lpszClassName = APP_CLASSNAME "Tab";
 	this->m_wcex.lpszMenuName  = nullptr;
 	this->m_wcex.hbrBackground = ::CreateSolidBrush(RGB(255, 255, 255));
@@ -298,6 +299,7 @@ LRESULT CALLBACK pdfv::MainWindow::windowProc(HWND hwnd, UINT uMsg, WPARAM wp, L
 		mwnd.wOnKeydown(wp);
 		break;
 	case WM_KEYUP:
+		DEBUGPRINT("Key up %d!\n", wp);
 		mwnd.m_keyDown[wp] = false;
 		break;
 	case WM_MOUSEWHEEL:
@@ -428,6 +430,11 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 		}
 		break;
 	case IDM_FILE_CLOSETAB:
+		if (mwnd.m_keyDown[L'W'])
+		{
+			break;
+		}
+		mwnd.m_keyDown[L'W'] = true;
 		// Close current tab
 		::SendMessageW(this->m_hwnd, WM_COMMAND, IDM_LIMIT + this->m_tabs.m_tabindex, 0);
 		break;
@@ -532,24 +539,23 @@ void pdfv::MainWindow::wOnMousewheel(WPARAM wp) noexcept
 	
 	if (controlDown)
 	{
+		// Reset scrolling if zooming is applied
 		delta = 0;
 	}
 	else
 	{
-		auto dir{ delta > 0 ? SB_LINEUP : SB_LINEDOWN };
 		delta += newdelta;
-		if (std::abs(delta) >= WHEEL_DELTA)
+		auto dir{ delta > 0 ? SB_LINEUP : SB_LINEDOWN };
+
+		for (int i = std::abs(delta); i >= WHEEL_DELTA; i -= WHEEL_DELTA)
 		{
-			for (int i = std::abs(delta); i >= WHEEL_DELTA; i -= WHEEL_DELTA)
-			{
-				::SendMessageW(
-					mwnd.m_tabs.m_tabs[mwnd.m_tabs.m_tabindex]->tabhandle,
-					WM_VSCROLL,
-					MAKELONG(dir, 0),
-					0
-				);
-				delta += (dir == SB_LINEDOWN) ? WHEEL_DELTA : -WHEEL_DELTA;
-			}
+			::SendMessageW(
+				mwnd.m_tabs.m_tabs[mwnd.m_tabs.m_tabindex]->tabhandle,
+				WM_VSCROLL,
+				MAKELONG(dir, 0),
+				0
+			);
+			delta += (dir == SB_LINEDOWN) ? WHEEL_DELTA : -WHEEL_DELTA;
 		}
 	}
 	DEBUGPRINT("pdfv::MainWindow::wOnMouseWheel end!!!!\n");
@@ -567,7 +573,7 @@ void pdfv::MainWindow::wOnLButtonUp([[maybe_unused]] WPARAM wp, [[maybe_unused]]
 	if (this->m_highlighted && this->m_closeButtonDown)
 	{
 		// Click close button
-		::SendMessageW(this->getHwnd(), WM_COMMAND, IDM_LIMIT + this->m_highlightedIdx, 0);
+		::SendMessageW(this->getHandle(), WM_COMMAND, IDM_LIMIT + this->m_highlightedIdx, 0);
 		w::redraw(this->m_tabs.getHandle());
 	}
 	this->m_closeButtonDown = false;
@@ -590,7 +596,7 @@ LRESULT pdfv::MainWindow::wOnNotify(LPARAM lp) noexcept
 	case TCN_KEYDOWN:
 	{
 		auto kd = reinterpret_cast<NMTCKEYDOWN *>(lp);
-		::SendMessageW(this->getHwnd(), MainWindow::WM_SPECIALKEYDOWN, kd->wVKey, kd->flags);
+		::SendMessageW(this->getHandle(), MainWindow::WM_SPECIALKEYDOWN, kd->wVKey, kd->flags);
 		break;
 	}
 	case TCN_SELCHANGING:
@@ -647,35 +653,51 @@ void pdfv::MainWindow::wOnSizing(WPARAM wp, LPARAM lp) noexcept
 void pdfv::MainWindow::wOnSize() noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::wOnSize()\n");
-	this->m_usableArea = w::getCliR(this->getHwnd());
+	this->m_usableArea = w::getCliR(this->getHandle());
 
-	this->m_totalArea = w::getWinR(this->getHwnd());
+	this->m_totalArea = w::getWinR(this->getHandle());
 	this->m_border = this->m_totalArea - this->m_usableArea;
 	this->m_border.y -= this->m_menuSize;
 
-	this->m_tabs.resize(this->m_usableArea);
+	auto statusr{ w::getCliR(this->m_statushwnd) };
+	this->m_tabs.resize(this->m_usableArea - xy<int>{ 0, statusr.bottom - statusr.top });
+	w::resize(this->m_statushwnd, 0, 0);
 }
 void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::wOnCreate(%p, %lu)\n", static_cast<void *>(hwnd), lp);
 	this->m_hwnd = hwnd;
-	{
-		auto winr{ w::getWinR(hwnd) };
-		this->m_border = make_xy(winr) - make_xy(w::getCliR(hwnd));
-		this->m_totalArea = this->m_usableArea + this->m_border;
-		this->m_totalArea.y += this->m_menuSize;
-		this->m_minArea = this->m_totalArea;
-		this->m_pos = { winr.left, winr.top };
+	
+	this->m_statushwnd = ::CreateWindowExW(
+		0,
+		STATUSCLASSNAMEW,
+		nullptr,
+		SBARS_SIZEGRIP | WS_CHILD | WS_VISIBLE,
+		0, 0, 0, 0,
+		hwnd,
+		reinterpret_cast<HMENU>(IDC_STATUSBAR),
+		this->m_hInst,
+		nullptr
+	);
+	
+	auto winr{ w::getWinR(hwnd) };
+	auto clir{ w::getCliR(hwnd) };
+	this->m_border = make_xy(winr) - make_xy(clir);
+	this->m_minArea = this->m_usableArea + this->m_border + xy<int>{ 0, this->m_menuSize };
+	this->m_pos = { winr.left, winr.top };
 
-		this->m_totalArea = winr;
-		this->m_totalArea.x = std::max(this->m_totalArea.x, this->m_minArea.x);
-		this->m_totalArea.y = std::max(this->m_totalArea.y, this->m_minArea.y);
-	}
+	this->m_totalArea   = winr;
+	this->m_totalArea.x = std::max(this->m_totalArea.x, this->m_minArea.x);
+	this->m_totalArea.y = std::max(this->m_totalArea.y, this->m_minArea.y);
 	w::resize(hwnd, this->m_totalArea.x, this->m_totalArea.y, true);
 
 	this->m_title = w::getWinText(hwnd, MainWindow::defaulttitle);
 
-	this->m_tabs = Tabs(hwnd, this->getHinst());
+	clir = w::getCliR(hwnd);
+	auto statusr{ w::getCliR(this->m_statushwnd) };
+	clir.bottom = clir.top + (clir.bottom - clir.top) - (statusr.bottom - statusr.top);
+
+	this->m_tabs = Tabs(hwnd, this->getHinst(), clir);
 	w::setFont(this->m_tabs.getHandle(), this->getDefFont());
 
 	this->m_tabs.insert(Tabs::defaulttitle);
@@ -811,7 +833,7 @@ void pdfv::MainWindow::openPdfFile(std::wstring_view file) noexcept
 			break;
 		}
 	}
-	pdfv::Tabs::listtype::iterator it;
+	pdfv::Tabs::ListType::iterator it;
 	if (this->m_tabs.size() == 1 && this->m_tabs.getName() == Tabs::defaulttitlepadded)
 	{
 		it = this->m_tabs.rename(fshort);

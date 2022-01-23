@@ -21,17 +21,17 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR cmdLine, int nCmdShow)
 		return pdfv::error::success;
 	}
 
-	if (!pdfv::MainWindow::mwnd.init(hInst, argc, argv.get())) [[unlikely]]
+	if (!pdfv::window.init(hInst, argc, argv.get())) [[unlikely]]
 	{
 		pdfv::error::report();
 		return pdfv::error::error;
 	}
 
-	if (!pdfv::MainWindow::mwnd.run(fname, nCmdShow)) [[unlikely]]
+	if (!pdfv::window.run(fname, nCmdShow)) [[unlikely]]
 	{
 		pdfv::error::report();
 		return pdfv::error::error;
 	}	
 
-	return pdfv::MainWindow::mwnd.msgLoop();
+	return pdfv::window.msgLoop();
 }

@@ -30,7 +30,7 @@ namespace pdfv
 		xy<int> m_pos;
 		xy<int> m_border;
 		int m_menuSize{ 0 };
-		HWND m_hwnd{ nullptr };
+		HWND m_hwnd{ nullptr }, m_statushwnd{ nullptr };
 		WNDCLASSEXW m_wcex{};
 		std::wstring m_title;
 		w::SafeGDI<HFONT> m_defaultFont{ nullptr }, m_defaultFontBold{ nullptr };
@@ -115,7 +115,7 @@ namespace pdfv
 		{
 			return this->m_wcex;
 		}
-		[[nodiscard]] constexpr HWND getHwnd() const noexcept
+		[[nodiscard]] constexpr HWND getHandle() const noexcept
 		{
 			return this->m_hwnd;
 		}

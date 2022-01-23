@@ -39,7 +39,7 @@ void pdfv::error::report(pdfv::error::Errorcode errid, HWND hwnd) noexcept
 }
 void pdfv::error::report(pdfv::error::Errorcode errid) noexcept
 {
-	pdfv::error::report(errid, MainWindow::mwnd.getHwnd());
+	pdfv::error::report(errid, pdfv::window.getHandle());
 }
 
 pdfv::error::Errorcode pdfv::error::lastErr = pdfv::error::Errorcode::success;

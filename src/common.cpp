@@ -270,7 +270,7 @@ namespace pdfv
 				nullptr,
 				nullptr
 			);
-			auto hfont{ MainWindow::mwnd.getDefFont() };
+			auto hfont{ window.getDefFont() };
 			w::setFont(button1,    hfont, true);
 			w::setFont(button2,    hfont, true);
 			w::setFont(messagebox, hfont, true);
@@ -302,7 +302,7 @@ namespace pdfv
 {
 	DEBUGPRINT("pdfv::askInfo(%p, %p)\n", static_cast<const void *>(message.data()), static_cast<const void *>(title.data()));
 
-	WNDCLASSEXW wc{ MainWindow::mwnd.getWinClass() };
+	WNDCLASSEXW wc{ window.getWinClass() };
 	wc.lpfnWndProc   = &pdfv::askProc;
 	wc.lpszClassName = L"AskInfoClass";
 	wc.lpszMenuName  = nullptr;
@@ -311,7 +311,7 @@ namespace pdfv
 	{
 		return {};
 	}
-	MainWindow::mwnd.enable(false);
+	window.enable(false);
 	AskProc_finished = false;
 
 	wchar_t temp[2048]{};
@@ -324,14 +324,14 @@ namespace pdfv
 		CW_USEDEFAULT,
 		dip(330, dpi.x),
 		dip(142, dpi.y),
-		MainWindow::mwnd.getHwnd(),
+		window.getHandle(),
 		nullptr,
 		nullptr,
 		reinterpret_cast<LPVOID>(temp)
 	);
 	if (hwnd == nullptr) [[unlikely]]
 	{
-		MainWindow::mwnd.enable();
+		window.enable();
 		::UnregisterClassW(wc.lpszClassName, wc.hInstance);
 		return {};
 	}
@@ -354,7 +354,7 @@ namespace pdfv
 	}
 	::DestroyWindow(hwnd);
 
-	MainWindow::mwnd.enable();
+	window.enable();
 	::UnregisterClassW(wc.lpszClassName, wc.hInstance);
 	return temp;
 }

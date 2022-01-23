@@ -19,51 +19,15 @@ namespace pdfv
 		pdfv::Pdfium second;
 
 		TabObject() noexcept = delete;
-		TabObject(HWND tabshwnd, HINSTANCE hinst) noexcept;
-		TabObject(HWND tabshwnd, HINSTANCE hInst, std::wstring_view V1, pdfv::Pdfium && V2 = pdfv::Pdfium());
-		TabObject(HWND tabshwnd, HINSTANCE hInst, std::wstring && V1, pdfv::Pdfium && V2 = pdfv::Pdfium()) noexcept;
+		TabObject(HWND tabshwnd, HINSTANCE hinst, RECT r) noexcept;
+		TabObject(HWND tabshwnd, HINSTANCE hInst, RECT r, std::wstring_view V1, pdfv::Pdfium && V2 = pdfv::Pdfium());
+		TabObject(HWND tabshwnd, HINSTANCE hInst, RECT r, std::wstring && V1, pdfv::Pdfium && V2 = pdfv::Pdfium()) noexcept;
 		TabObject(const TabObject & other) = delete;
 		TabObject(TabObject && other) noexcept;
 		TabObject & operator=(const TabObject & other) = delete;
 		TabObject & operator=(TabObject && other) noexcept;
 		~TabObject() noexcept;
 		
-		/**
-		 * @brief Inserts handle to the taba and sets its parent to the tab if necessary
-		 * 
-		 * @param handle Window handle
-		 */
-		void insert(HWND handle);
-		/**
-		 * @brief Inserts and constructs in-place an element to the tab
-		 * 
-		 * @param dwExStyle Extended style
-		 * @param className Window class name
-		 * @param windowName Window title
-		 * @param dwStyle Style
-		 * @param pos Window position value pair, relative to the tab, CW_USEDEFAULT by default
-		 * @param size Window size value pair, CW_USEDEFAULT by default
-		 * @param menu Window menu handle, nullptr by default
-		 * @param hinst Module instance handle, nullptr by default
-		 * @return const HWND& Constructed window handle
-		 */
-		const HWND & insert(
-			DWORD dwExStyle,
-			std::wstring_view className,
-			std::wstring_view windowName,
-			DWORD dwStyle,
-			xy<int> pos = { CW_USEDEFAULT, CW_USEDEFAULT },
-			xy<int> size = { CW_USEDEFAULT, CW_USEDEFAULT },
-			HMENU menu = nullptr,
-			HINSTANCE hinst = nullptr
-		);
-		/**
-		 * @brief Remove handle from the tab and destroys it, sets given handle
-		 * to nullptr
-		 * 
-		 * @param handle Window handle
-		 */
-		void remove(HWND & handle) noexcept;
 		/**
 		 * @brief Shows/hides the tab window
 		 * 
@@ -74,7 +38,7 @@ namespace pdfv
 		 * @brief Informs the window procedure of the tab to update its scrollbars
 		 * 
 		 */
-		void updatePDF() const noexcept;
+		void updatePDF() noexcept;
 
 	private:
 		HWND parent{ nullptr }, tabhandle{ nullptr };
@@ -84,8 +48,6 @@ namespace pdfv
 		int yMinScroll{};
 		int page{};
 
-		std::set<HWND> handles;
-
 		friend class pdfv::Tabs;
 		friend class pdfv::MainWindow;
 
@@ -93,12 +55,14 @@ namespace pdfv
 		 * @brief "Hub" to tabs' window procedures
 		 * 
 		 */
-		static LRESULT CALLBACK tabProcHub(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp);
+		static LRESULT CALLBACK tabObjectProcHub(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp);
 		/**
 		 * @brief "Real" tab's window procedure
 		 * 
 		 */
-		LRESULT tabProc(UINT uMsg, WPARAM wp, LPARAM lp);
+		LRESULT tabObjectProc(UINT uMsg, WPARAM wp, LPARAM lp);
+
+		void updateScrollbar() noexcept;
 	};
 
 	class Tabs
@@ -110,15 +74,14 @@ namespace pdfv
 		static inline const std::wstring defaulttitlepadded{ defaulttitle + padding };
 
 	private:
-		HWND m_parent{ nullptr };
-		HWND m_tabshwnd{ nullptr };
+		HWND m_parent{ nullptr }, m_tabshwnd{ nullptr };
 		xy<int> m_pos;
 		xy<int> m_size;
 		xy<int> m_offset;
 
-		using listtype = std::vector<std::unique_ptr<pdfv::TabObject>>;
+		using ListType = std::vector<std::unique_ptr<pdfv::TabObject>>;
 
-		listtype m_tabs;
+		ListType m_tabs;
 		ssize_t m_tabindex{ 0 };
 
 		friend class pdfv::MainWindow;
@@ -133,7 +96,7 @@ namespace pdfv
 		 * @param hwnd Parent's window handle
 		 * @param hInst Module instance handle
 		 */
-		Tabs(HWND hwnd, HINSTANCE hInst) noexcept;
+		Tabs(HWND hwnd, HINSTANCE hInst, RECT size) noexcept;
 		Tabs(const Tabs & other) = delete;
 		Tabs(Tabs && other) noexcept;
 		Tabs & operator=(const Tabs & other) = delete;
@@ -143,7 +106,7 @@ namespace pdfv
 		/**
 		 * @return constexpr const HWND& Tab system window handle
 		 */
-		[[nodiscard]] constexpr const HWND & getHandle() const noexcept
+		[[nodiscard]] constexpr HWND getHandle() const noexcept
 		{
 			return this->m_tabshwnd;
 		}
@@ -179,7 +142,7 @@ namespace pdfv
 		 * @param index Tab index, Tabs::endpos by default
 		 * @return listtype::iterator Iterator of newly inserted tab
 		 */
-		listtype::iterator insert(std::wstring_view title, const ssize_t index = Tabs::endpos);
+		ListType::iterator insert(std::wstring_view title, const ssize_t index = Tabs::endpos);
 		/**
 		 * @brief Removes a tab with the specified name
 		 * 
@@ -191,7 +154,7 @@ namespace pdfv
 		 * 
 		 * @param index Tab index, Tabs::endpos by default
 		 */
-		void remove(const ssize_t index = Tabs::endpos) noexcept;
+		void remove(ssize_t index = Tabs::endpos) noexcept;
 		/**
 		 * @brief Renames a tab at the specified index
 		 * 
@@ -199,7 +162,7 @@ namespace pdfv
 		 * @param index Tab index, Tabs::endpos by default
 		 * @return listtype::iterator Iterator of renamed tabs
 		 */
-		listtype::iterator rename(std::wstring_view title, const ssize_t index = Tabs::endpos);
+		ListType::iterator rename(std::wstring_view title, const ssize_t index = Tabs::endpos);
 		/**
 		 * @brief Get tab name
 		 * 
