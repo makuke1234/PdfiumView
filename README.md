@@ -31,6 +31,7 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 # Changelog
 
 * 0.5 (planned)
+	* [ ] Populate status bar with useful messages
 	* [ ] Add zooming capability
 
 * 0.4
