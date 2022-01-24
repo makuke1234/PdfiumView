@@ -38,7 +38,7 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 * 0.5
 	* Fix bug, when closing current tab, the next tab doesn't render
 	* Show page numbers on status bar
-	* Show zoom on status bar, min 10%, max 1000%
+	* Show zoom on status bar, min 100%, max 1000%
 	* Add zooming hotkeys (no zooming functionality itself, yet)
 
 * 0.4
