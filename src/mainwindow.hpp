@@ -42,7 +42,7 @@ namespace pdfv
 		std::wstring m_title;
 		w::SafeGDI<HFONT> m_defaultFont{ nullptr }, m_defaultFontBold{ nullptr };
 		bool m_helpAvailable{ true };
-		pdfv::Tabs m_tabs;
+		std::unique_ptr<pdfv::Tabs> m_tabs;
 		pdfv::OpenDialog m_openDialog{ 2048 };
 
 		w::SafeGDI<HBRUSH> m_redBrush{ ::CreateSolidBrush(RGB(237, 28, 36)) };

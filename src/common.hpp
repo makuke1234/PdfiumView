@@ -284,15 +284,12 @@ namespace pdfv
 	{
 	};
 
-	using ArgVecT = w::Safeptr<
-		wchar_t **,
-		decltype(
-			[](wchar_t ** obj) noexcept
-			{
-				::LocalFree(obj);
-			}
-		)
-	>;
+	auto ArgVecFree = [](wchar_t ** obj) noexcept
+	{
+		::LocalFree(obj);
+	};
+	
+	using ArgVecT = w::Safeptr<wchar_t **, decltype(ArgVecFree)>;
 
 	/**
 	 * @brief Get wide-stringed argument vector from command line wide-string

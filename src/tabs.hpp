@@ -15,38 +15,21 @@ namespace pdfv
 	class TabObject
 	{
 	public:
-		static constexpr UINT WM_ZOOM     { WM_APP };
-		static constexpr UINT WM_ZOOMRESET{ WM_APP + 1 };
 
 		std::wstring first;
 		pdfv::Pdfium second;
 		float zoom{ 1.0f };
 
 		TabObject() noexcept = delete;
-		TabObject(HWND tabshwnd, HINSTANCE hinst, RECT r) noexcept;
-		TabObject(HWND tabshwnd, HINSTANCE hInst, RECT r, std::wstring_view V1, pdfv::Pdfium && V2 = pdfv::Pdfium());
-		TabObject(HWND tabshwnd, HINSTANCE hInst, RECT r, std::wstring && V1, pdfv::Pdfium && V2 = pdfv::Pdfium()) noexcept;
+		TabObject(std::wstring_view v1, pdfv::Pdfium && v2 = pdfv::Pdfium());
+		TabObject(std::wstring && v1, pdfv::Pdfium && v2 = pdfv::Pdfium());
 		TabObject(const TabObject & other) = delete;
-		TabObject(TabObject && other) noexcept;
+		TabObject(TabObject && other) noexcept = default;
 		TabObject & operator=(const TabObject & other) = delete;
-		TabObject & operator=(TabObject && other) noexcept;
-		~TabObject() noexcept;
+		TabObject & operator=(TabObject && other) noexcept = default;
+		~TabObject() noexcept = default;
 		
-		/**
-		 * @brief Shows/hides the tab window
-		 * 
-		 * @param visible Determines the visibility of the window
-		 */
-		void show(bool visible = true) const noexcept;
-		/**
-		 * @brief Informs the window procedure of the tab to update its scrollbars
-		 * 
-		 */
-		void updatePDF() noexcept;
-
 	private:
-		HWND parent{ nullptr }, tabhandle{ nullptr };
-		xy<int> size;
 
 		int yMaxScroll{};
 		int yMinScroll{};
@@ -55,18 +38,6 @@ namespace pdfv
 		friend class pdfv::Tabs;
 		friend class pdfv::MainWindow;
 
-		/**
-		 * @brief "Hub" to tabs' window procedures
-		 * 
-		 */
-		static LRESULT CALLBACK tabObjectProcHub(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp);
-		/**
-		 * @brief "Real" tab's window procedure
-		 * 
-		 */
-		LRESULT tabObjectProc(UINT uMsg, WPARAM wp, LPARAM lp);
-
-		void updateScrollbar() noexcept;
 		void updatePageCounter() const noexcept;
 		void updateZoom() const noexcept;
 	};
@@ -74,25 +45,45 @@ namespace pdfv
 	class Tabs
 	{
 	public:
+		static constexpr LPCWSTR c_className{ APP_CLASSNAME "TabsCanvas" };
+
+		static constexpr UINT WM_ZOOM     { WM_APP };
+		static constexpr UINT WM_ZOOMRESET{ WM_APP + 1 };
+
 		static constexpr ssize_t endpos{ -1 };
 		static inline const std::wstring padding{ L"      " };
 		static inline const std::wstring defaulttitle{ L"unopened" };
 		static inline const std::wstring defaulttitlepadded{ defaulttitle + padding };
 
 	private:
-		HWND m_parent{ nullptr }, m_tabshwnd{ nullptr };
+		HWND m_parent{ nullptr }, m_tabshwnd{ nullptr }, m_canvashwnd{ nullptr };
 		xy<int> m_pos;
 		xy<int> m_size;
-		xy<int> m_offset;
+		xy<int> m_offset{ 0, dip(23, dpi.y) };
 
-		using ListType = std::vector<std::unique_ptr<pdfv::TabObject>>;
+		using ListType = std::vector<pdfv::TabObject>;
 
 		ListType m_tabs;
 		ssize_t m_tabindex{ 0 };
 
+		/**
+		 * @brief Return pointer to current tab, nullptr, if none is open
+		 * 
+		 * @return pdfv::TabObject*
+		 */
+		[[nodiscard]] pdfv::TabObject * curTab() noexcept;
+		/**
+		 * @brief Return pointer to current tab, nullptr, if none is open
+		 * 
+		 * @return const pdfv::TabObject* 
+		 */
+		[[nodiscard]] const pdfv::TabObject * curTab() const noexcept;
+
 		friend class pdfv::MainWindow;
 
 		static constexpr xy<int> s_cCloseButtonSz{ 20, 20 };
+
+		LRESULT tabsCanvasProc(UINT msg, WPARAM wp, LPARAM lp);
 
 	public:
 		Tabs() noexcept = default;
@@ -109,12 +100,18 @@ namespace pdfv
 		Tabs & operator=(Tabs && other) noexcept;
 		~Tabs() noexcept;
 
+		static LRESULT CALLBACK tabsCanvasProcHub(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
+
 		/**
 		 * @return constexpr const HWND& Tab system window handle
 		 */
-		[[nodiscard]] constexpr HWND getHandle() const noexcept
+		[[nodiscard]] constexpr HWND getTabsHandle() const noexcept
 		{
 			return this->m_tabshwnd;
+		}
+		[[nodiscard]] constexpr HWND getCanvasHandle() const noexcept
+		{
+			return this->m_canvashwnd;
 		}
 
 		/**
@@ -133,7 +130,12 @@ namespace pdfv
 		 * @brief Redraws the tab control
 		 * 
 		 */
-		void repaint() const noexcept;
+		void redrawTabs() const noexcept;
+		/**
+		 * @brief Redraws the tab canvas
+		 * 
+		 */
+		void redrawCanvas() const noexcept;
 		/**
 		 * @brief Calculates the rectangle of tab close button, respective to tabs rectangle
 		 * 
@@ -191,6 +193,8 @@ namespace pdfv
 		 * 
 		 */
 		void selChange() noexcept;
+
+		void updateScrollbar() noexcept;
 
 	};
 }

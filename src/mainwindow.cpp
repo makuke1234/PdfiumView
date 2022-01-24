@@ -9,10 +9,10 @@ pdfv::MainWindow pdfv::MainWindow::mwnd;
 {
 	auto p{ w::getCur(this->getHandle()) };
 
-	for (std::size_t i = 0; i < this->m_tabs.size(); ++i)
+	for (std::size_t i = 0; i < this->m_tabs->size(); ++i)
 	{
 		RECT r;
-		TabCtrl_GetItemRect(this->m_tabs.getHandle(), i, &r);
+		TabCtrl_GetItemRect(this->m_tabs->getTabsHandle(), i, &r);
 		auto closeR{ Tabs::s_calcCloseButton(r) };
 
 		if (p.x >= closeR.left && p.x <= closeR.right &&
@@ -143,14 +143,14 @@ pdfv::MainWindow::~MainWindow() noexcept
 		return false;
 	}
 
-	this->m_wcex.lpfnWndProc   = &pdfv::TabObject::tabObjectProcHub;
-	this->m_wcex.lpszClassName = APP_CLASSNAME "Tab";
+	this->m_wcex.lpfnWndProc   = &pdfv::Tabs::tabsCanvasProcHub;
+	this->m_wcex.lpszClassName = pdfv::Tabs::c_className;
 	this->m_wcex.lpszMenuName  = nullptr;
 	this->m_wcex.hbrBackground = ::CreateSolidBrush(RGB(255, 255, 255));
 	
 	if (!registerClasses(this->m_wcex)) [[unlikely]]
 	{
-		error::lastErr = error::registertab;
+		error::lastErr = error::registertabscanvas;
 		return false;
 	}
 
@@ -360,7 +360,7 @@ LRESULT pdfv::MainWindow::wOnDrawItem(LPARAM lp) noexcept
 	auto dis{ reinterpret_cast<DRAWITEMSTRUCT *>(lp) };
 	DEBUGPRINT("pdfv::MainWindow::wOnDrawItem(%p)\n", static_cast<void *>(dis));
 	
-	if (dis->hwndItem == this->m_tabs.m_tabshwnd)
+	if (dis->hwndItem == this->m_tabs->m_tabshwnd)
 	{
 		// Do double-buffering
 		auto w{ dis->rcItem.right  - dis->rcItem.left };
@@ -389,8 +389,8 @@ LRESULT pdfv::MainWindow::wOnDrawItem(LPARAM lp) noexcept
 
 		// Draw text
 		::SelectObject(hdc, this->getDefFont());
-		const auto & item{ this->m_tabs.m_tabs[dis->itemID] };
-		::DrawTextW(hdc, item->first.c_str(), item->first.length(), &r, DT_SINGLELINE | DT_VCENTER | DT_CENTER);
+		const auto & item{ this->m_tabs->m_tabs[dis->itemID] };
+		::DrawTextW(hdc, item.first.c_str(), item.first.length(), &r, DT_SINGLELINE | DT_VCENTER | DT_CENTER);
 
 		// Draw close button last
 		auto closeR{ Tabs::s_calcCloseButton(r) };
@@ -442,7 +442,7 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 		}
 		mwnd.m_keyDown[L'W'] = true;
 		// Close current tab
-		::SendMessageW(this->getHandle(), WM_COMMAND, IDM_LIMIT + this->m_tabs.m_tabindex, 0);
+		::SendMessageW(this->getHandle(), WM_COMMAND, IDM_LIMIT + this->m_tabs->m_tabindex, 0);
 		break;
 	case IDM_FILE_EXIT:
 		this->close();
@@ -455,58 +455,58 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 		break;
 	case IDC_TABULATE:
 	{
-		ssize_t idx{ this->m_tabs.m_tabindex + 1 };
-		if (idx == ssize_t(this->m_tabs.size()))
+		ssize_t idx{ this->m_tabs->m_tabindex + 1 };
+		if (idx == ssize_t(this->m_tabs->size()))
 		{
 			idx = 0;
 		}
-		this->m_tabs.select(idx);
+		this->m_tabs->select(idx);
 		break;
 	}	
 	case IDC_TABULATEBACK:
 	{
-		ssize_t idx{ this->m_tabs.m_tabindex - 1 };
+		ssize_t idx{ this->m_tabs->m_tabindex - 1 };
 		if (idx == -1)
 		{
-			idx = this->m_tabs.size() - 1;
+			idx = this->m_tabs->size() - 1;
 		}
-		this->m_tabs.select(idx);
+		this->m_tabs->select(idx);
 		break;
 	}
 	case IDC_ZOOMRESET:
-		::SendMessageW(this->m_tabs.m_tabs[this->m_tabs.m_tabindex]->tabhandle, TabObject::WM_ZOOMRESET, 0, 0);
+		::SendMessageW(this->m_tabs->getCanvasHandle(), Tabs::WM_ZOOMRESET, 0, 0);
 		break;
 	case IDC_ZOOMPLUS:
-		::SendMessageW(this->m_tabs.m_tabs[this->m_tabs.m_tabindex]->tabhandle, TabObject::WM_ZOOM, WHEEL_DELTA / 10, 0);
+		::SendMessageW(this->m_tabs->getCanvasHandle(), Tabs::WM_ZOOM, WHEEL_DELTA / 10, 0);
 		break;
 	case IDC_ZOOMMINUS:
-		::SendMessageW(this->m_tabs.m_tabs[this->m_tabs.m_tabindex]->tabhandle, TabObject::WM_ZOOM, -WHEEL_DELTA / 10, 0);
+		::SendMessageW(this->m_tabs->getCanvasHandle(), Tabs::WM_ZOOM, -WHEEL_DELTA / 10, 0);
 		break;
 	default:
-		if (const auto comp{ int(wp) - IDM_LIMIT }; comp >= 0 && comp < int(this->m_tabs.size()))
+		if (const auto comp{ int(wp) - IDM_LIMIT }; comp >= 0 && comp < int(this->m_tabs->size()))
 		{
-			if (this->m_tabs.size() > 1)
+			if (this->m_tabs->size() > 1)
 			{
 				printf("Remove tab %d\n", comp);
-				if ((comp < this->m_tabs.m_tabindex) ||
-					(this->m_tabs.m_tabindex == int(this->m_tabs.size() - 1)))
+				if ((comp < this->m_tabs->m_tabindex) ||
+					(this->m_tabs->m_tabindex == int(this->m_tabs->size() - 1)))
 				{
-					--this->m_tabs.m_tabindex;
+					--this->m_tabs->m_tabindex;
 				}
-				this->m_tabs.remove(comp);
-				this->m_tabs.select(this->m_tabs.m_tabindex);
+				this->m_tabs->remove(comp);
+				this->m_tabs->select(this->m_tabs->m_tabindex);
 			}
 			else
 			{
-				if (this->m_tabs.getName() == Tabs::defaulttitlepadded)
+				if (this->m_tabs->getName() == Tabs::defaulttitlepadded)
 				{
 					this->close();
 				}
 				else
 				{
-					auto it = this->m_tabs.rename(Tabs::defaulttitle);
-					(*it)->second.pdfUnload();
-					(*it)->updatePDF();
+					auto it = this->m_tabs->rename(Tabs::defaulttitle);
+					(it)->second.pdfUnload();
+					this->m_tabs->redrawCanvas();
 				}
 			}
 		}
@@ -515,7 +515,7 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 void pdfv::MainWindow::wOnKeydown(WPARAM wp) noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::wOnKeyDown(%u)\n", wp);
-	auto target{ mwnd.m_tabs.m_tabs[mwnd.m_tabs.m_tabindex]->tabhandle };
+	auto target{ this->m_tabs->getCanvasHandle() };
 	switch (wp)
 	{
 	case VK_HOME:
@@ -539,8 +539,8 @@ void pdfv::MainWindow::wOnMousewheel(WPARAM wp) noexcept
 
 	auto p{ w::getCur() };
 	auto pt1{ xy<int>{ p.x, p.y } - this->m_pos };
-	auto pt2{ this->m_tabs.m_pos  + this->m_tabs.m_offset };
-	auto sz { this->m_tabs.m_size - this->m_tabs.m_offset };
+	auto pt2{ this->m_tabs->m_pos  + this->m_tabs->m_offset };
+	auto sz { this->m_tabs->m_size - this->m_tabs->m_offset };
 	if (!(pt1.x >= pt2.x && pt1.x <= (pt2.x + sz.x) &&
 		pt1.y >= pt2.y && pt1.y <= (pt2.y + sz.y)))
 	{
@@ -557,8 +557,8 @@ void pdfv::MainWindow::wOnMousewheel(WPARAM wp) noexcept
 		// Reset scrolling if zooming is applied
 		delta = 0;
 		::SendMessageW(
-			this->m_tabs.m_tabs[this->m_tabs.m_tabindex]->tabhandle,
-			TabObject::WM_ZOOM,
+			this->m_tabs->getCanvasHandle(),
+			Tabs::WM_ZOOM,
 			newdelta,
 			0
 		);
@@ -571,7 +571,7 @@ void pdfv::MainWindow::wOnMousewheel(WPARAM wp) noexcept
 		for (int i = std::abs(delta); i >= WHEEL_DELTA; i -= WHEEL_DELTA)
 		{
 			::SendMessageW(
-				this->m_tabs.m_tabs[mwnd.m_tabs.m_tabindex]->tabhandle,
+				this->m_tabs->getCanvasHandle(),
 				WM_VSCROLL,
 				MAKELONG(dir, 0),
 				0
@@ -586,7 +586,7 @@ void pdfv::MainWindow::wOnLButtonDown([[maybe_unused]] WPARAM wp, [[maybe_unused
 	if (this->m_highlighted)
 	{
 		this->m_closeButtonDown = true;
-		w::redraw(this->m_tabs.getHandle());
+		this->m_tabs->redrawTabs();
 	}
 }
 void pdfv::MainWindow::wOnLButtonUp([[maybe_unused]] WPARAM wp, [[maybe_unused]] LPARAM lp) noexcept
@@ -595,7 +595,7 @@ void pdfv::MainWindow::wOnLButtonUp([[maybe_unused]] WPARAM wp, [[maybe_unused]]
 	{
 		// Click close button
 		::SendMessageW(this->getHandle(), WM_COMMAND, IDM_LIMIT + this->m_highlightedIdx, 0);
-		w::redraw(this->m_tabs.getHandle());
+		this->m_tabs->redrawTabs();
 	}
 	this->m_closeButtonDown = false;
 }
@@ -606,7 +606,7 @@ void pdfv::MainWindow::wOnTabMouseMove([[maybe_unused]] WPARAM wp, [[maybe_unuse
 	if (auto high{ this->intersectsTabClose() }; high != this->m_highlighted)
 	{
 		this->m_highlighted = high;
-		w::redraw(this->m_tabs.getHandle());
+		this->m_tabs->redrawTabs();
 	}
 }
 LRESULT pdfv::MainWindow::wOnNotify(LPARAM lp) noexcept
@@ -623,7 +623,7 @@ LRESULT pdfv::MainWindow::wOnNotify(LPARAM lp) noexcept
 	case TCN_SELCHANGING:
 		return FALSE;
 	case TCN_SELCHANGE:
-		this->m_tabs.selChange();
+		this->m_tabs->selChange();
 		break;
 	}
 
@@ -682,7 +682,7 @@ void pdfv::MainWindow::wOnSize() noexcept
 	this->m_border.y -= this->m_menuSize;
 
 	auto statusr{ w::getCliR(this->m_statushwnd) };
-	this->m_tabs.resize(this->m_usableArea - xy<int>{ 0, statusr.bottom - statusr.top });
+	this->m_tabs->resize(this->m_usableArea - xy<int>{ 0, statusr.bottom - statusr.top });
 	w::resize(this->m_statushwnd, 0, 0);
 	
 	// Set status bar parts
@@ -725,10 +725,10 @@ void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
 
 	clir.bottom = clir.top + (clir.bottom - clir.top) - (statusr.bottom - statusr.top);
 
-	this->m_tabs = Tabs(hwnd, this->getHinst(), clir);
-	w::setFont(this->m_tabs.getHandle(), this->getDefFont());
+	this->m_tabs = std::make_unique<Tabs>(hwnd, this->getHinst(), clir);
+	w::setFont(this->m_tabs->getTabsHandle(), this->getDefFont());
 
-	this->m_tabs.insert(Tabs::defaulttitle);
+	this->m_tabs->insert(Tabs::defaulttitle);
 
 	// Open PDF if any
 	const wchar_t * fname{ static_cast<wchar_t *>(reinterpret_cast<CREATESTRUCTW *>(lp)->lpCreateParams) };
@@ -755,13 +755,13 @@ void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
 					if (self->intersectsTabClose() == false && self->m_highlighted)
 					{
 						self->m_highlighted = false;
-						w::redraw(self->m_tabs.getHandle());
+						self->m_tabs->redrawTabs();
 					}
 				}
 				else if (self->m_highlighted == false && self->m_closeButtonDown)
 				{
 					self->m_closeButtonDown = false;
-					w::redraw(self->m_tabs.getHandle());
+					self->m_tabs->redrawTabs();
 				}
 
 				::Sleep(16);
@@ -862,17 +862,16 @@ void pdfv::MainWindow::openPdfFile(std::wstring_view file) noexcept
 		}
 	}
 	pdfv::Tabs::ListType::iterator it;
-	if (this->m_tabs.size() == 1 && this->m_tabs.getName() == Tabs::defaulttitlepadded)
+	if (this->m_tabs->size() == 1 && this->m_tabs->getName() == Tabs::defaulttitlepadded)
 	{
-		it = this->m_tabs.rename(fshort);
+		it = this->m_tabs->rename(fshort);
 	}
 	else
 	{
-		it = this->m_tabs.insert(fshort);
+		it = this->m_tabs->insert(fshort);
 	}
 	
-	(*it)->second.pdfLoad(std::wstring(file));
-	(*it)->updatePDF();
-
-	this->m_tabs.select();
+	(it)->second.pdfLoad(std::wstring(file));
+	
+	this->m_tabs->select();
 }
