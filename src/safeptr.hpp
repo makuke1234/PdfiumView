@@ -1,6 +1,7 @@
 #pragma once
 
 #include "concepts.hpp"
+#include "debug.hpp"
 
 namespace pdfv::w
 {
@@ -39,6 +40,7 @@ namespace pdfv::w
 		}
 		~Safeptr() noexcept
 		{
+			DEBUGPRINT("~Safeptr<%s>()\n", typeid(T).name());
 			if (this->obj != nullptr)
 			{
 				auto temp{ this->obj };

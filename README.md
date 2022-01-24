@@ -30,12 +30,14 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 
 # Changelog
 
-* 0.6 (planned)
-	* Revamp tab system, everything rendered on the tab page itself
-		* *Improves the look n' feel*
-	* [ ] Fix individual file compiling/linking
+* 0.7 (planned)
 	* [ ] Add more status bar functionality
 	* [ ] Add zooming capability
+
+* 0.6
+	* Revamp tab system, everything rendered on the tab page itself
+	* Improved the look n' feel
+	* Fix individual file compiling/linking
 
 * 0.5
 	* Fix bug, when closing current tab, the next tab doesn't render

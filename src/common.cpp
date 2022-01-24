@@ -109,6 +109,16 @@ void pdfv::w::openWeb(LPCWSTR url) noexcept
 	::ShellExecuteW(nullptr, L"open", url, nullptr, nullptr, SW_SHOWNORMAL);
 }
 
+void pdfv::w::WindowDeleter::operator()(HWND obj) noexcept
+{
+	::DestroyWindow(obj);
+};
+void pdfv::w::DCDeleter::operator()(HDC obj) noexcept
+{
+	::DeleteDC(obj);
+};
+
+
 bool pdfv::w::status::setParts(HWND statusbar, const std::vector<int> & edges) noexcept
 {
 	// Number of edges can't be greater than 256
@@ -125,6 +135,10 @@ bool pdfv::w::status::setText(HWND statusbar, int idx, DrawOp drawop, LPCWSTR st
 
 
 
+void pdfv::ArgVecFree::operator()(wchar_t ** obj) noexcept
+{
+	::LocalFree(obj);
+};
 
 [[nodiscard]] pdfv::ArgVecT pdfv::getArgs(LPWSTR cmdLine, int & argc) noexcept
 {

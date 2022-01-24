@@ -38,17 +38,6 @@
 #endif
 
 
-#ifdef _DEBUG
-	#include "debug.hpp"
-	#define DEBUGPRINT(...) pdfv::debug::printf(__VA_ARGS__)
-
-	#define DEBUGFUNCTION(f) f()
-#else
-	#define DEBUGPRINT(...)
-	
-	#define DEBUGFUNCTION(f)
-#endif
-
 
 namespace pdfv
 {
@@ -212,51 +201,48 @@ namespace pdfv
 		 */
 		constexpr auto openWebPage{ openWeb };
 
-
-		auto GDIDeleter = []<concepts::pointer T>(T obj) noexcept
+		template<concepts::pointer T>
+		struct GDIDeleter
 		{
-			::DeleteObject(obj);
+			void operator()(T obj) noexcept
+			{
+				::DeleteObject(obj);
+			}
 		};
-		auto WindowDeleter = [](HWND obj) noexcept
+		struct WindowDeleter
 		{
-			::DestroyWindow(obj);
+			void operator()(HWND obj) noexcept;
 		};
-		auto DCDeleter = [](HDC obj) noexcept
+		struct DCDeleter
 		{
-			::DeleteDC(obj);
+			void operator()(HDC obj) noexcept;
 		};
-
+		
 		/**
 		 * @brief Safe wrapper for GDI types
 		 * 
 		 * @tparam T Any GDI type
 		 */
 		template<typename T>
-		using SafeGDI = w::Safeptr<T, decltype(w::GDIDeleter)>;
+		using SafeGDI = w::Safeptr<T, w::GDIDeleter<T> >;
 
 		/**
 		 * @brief Safe wrapper for HWND
 		 * 
-		 * @tparam T 
 		 */
-		template<typename T>
-		using SafeWin = w::Safeptr<T, decltype(w::WindowDeleter)>;
+		using SafeWin = w::Safeptr<HWND, w::WindowDeleter>;
 		
 		/**
 		 * @brief Type alias for SafeWin
 		 * 
-		 * @tparam T 
 		 */
-		template<typename T>
-		using SafeWindow = SafeWin<T>;
+		using SafeWindow = SafeWin;
 
 		/**
 		 * @brief Safe wrapper for HDC
 		 * 
-		 * @tparam T 
 		 */
-		template<typename T>
-		using SafeHDC = w::Safeptr<T, decltype(w::DCDeleter)>;
+		using SafeHDC = w::Safeptr<HDC, w::DCDeleter>;
 
 		namespace status
 		{
@@ -284,12 +270,12 @@ namespace pdfv
 	{
 	};
 
-	auto ArgVecFree = [](wchar_t ** obj) noexcept
+	struct ArgVecFree
 	{
-		::LocalFree(obj);
+		void operator()(wchar_t ** obj) noexcept;
 	};
 	
-	using ArgVecT = w::Safeptr<wchar_t **, decltype(ArgVecFree)>;
+	using ArgVecT = w::Safeptr<wchar_t **, ArgVecFree>;
 
 	/**
 	 * @brief Get wide-stringed argument vector from command line wide-string

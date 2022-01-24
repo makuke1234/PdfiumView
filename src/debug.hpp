@@ -19,5 +19,16 @@ namespace pdfv::debug
 	int printf(const char * format, ...) noexcept;
 }
 
-
 #endif
+
+#ifdef _DEBUG
+	#include "debug.hpp"
+	#define DEBUGPRINT(...) pdfv::debug::printf(__VA_ARGS__)
+
+	#define DEBUGFUNCTION(f) f()
+#else
+	#define DEBUGPRINT(...)
+	
+	#define DEBUGFUNCTION(f)
+#endif
+
