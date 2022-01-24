@@ -31,7 +31,9 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 # Changelog
 
 * 0.6 (planned)
-	* [ ] Revamp tab system, everything rendered on the tab page itself
+	* Revamp tab system, everything rendered on the tab page itself
+		* *Improves the look n' feel*
+	* [ ] Fix individual file compiling/linking
 	* [ ] Add more status bar functionality
 	* [ ] Add zooming capability
 

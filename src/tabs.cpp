@@ -14,34 +14,7 @@ pdfv::TabObject::TabObject(std::wstring && v1, pdfv::Pdfium && v2)
 	this->first.append(pdfv::Tabs::padding);
 }
 
-void pdfv::TabObject::updatePageCounter() const noexcept
-{
-	if (this->second.pdfExists())
-	{
-		setText(
-			window.getStatusHandle(), MainWindow::StatusPages, w::status::DrawOp::def,
-			(std::wstring(L"Page: ") + std::to_wstring(this->second.pageGetNum()) + L'/' + std::to_wstring(this->second.pageGetCount())).c_str()
-		);
-	}
-	else
-	{
-		setText(window.getStatusHandle(), MainWindow::StatusPages, w::status::DrawOp::def, L"Page: NA");
-	}
-}
-void pdfv::TabObject::updateZoom() const noexcept
-{
-	if (this->second.pdfExists())
-	{
-		setText(
-			window.getStatusHandle(), MainWindow::StatusZoom, w::status::DrawOp::def,
-			(std::wstring(L"Zoom: ") + std::to_wstring(uint32_t(this->zoom * 100.0f + 0.5f)) + L'%').c_str()
-		);
-	}
-	else
-	{
-		setText(window.getStatusHandle(), MainWindow::StatusZoom, w::status::DrawOp::def, L"Zoom: NA");
-	}
-}
+
 
 [[nodiscard]] pdfv::TabObject * pdfv::Tabs::curTab() noexcept
 {
@@ -154,7 +127,7 @@ LRESULT pdfv::Tabs::tabsCanvasProc(UINT msg, WPARAM wp, LPARAM lp)
 			tab->page = yNewPos;
 
 			tab->second.pageLoad(tab->page + 1);
-			tab->updatePageCounter();
+			this->updatePageCounter();
 			w::redraw(this->m_canvashwnd);
 
 			SCROLLINFO si{};
@@ -175,7 +148,7 @@ LRESULT pdfv::Tabs::tabsCanvasProc(UINT msg, WPARAM wp, LPARAM lp)
 			tab->zoom = std::clamp(tab->zoom, 1.0f, 10.0f);
 			if (prevzoom != tab->zoom)
 			{
-				tab->updateZoom();
+				this->updateZoom();
 			}	
 		}
 		break;
@@ -186,7 +159,7 @@ LRESULT pdfv::Tabs::tabsCanvasProc(UINT msg, WPARAM wp, LPARAM lp)
 		if (tab != nullptr && tab->second.pdfExists() && tab->zoom != 1.0f)
 		{
 			tab->zoom = 1.0f;
-			tab->updateZoom();
+			this->updateZoom();
 		}
 		break;
 	}
@@ -194,11 +167,46 @@ LRESULT pdfv::Tabs::tabsCanvasProc(UINT msg, WPARAM wp, LPARAM lp)
 	case WM_LBUTTONUP:
 		::SendMessageW(this->m_tabshwnd, msg, wp, lp);
 		break;
+	case WM_CREATE:
+		this->updateScrollbar();
+		this->updatePageCounter();
+		this->updateZoom();
+		break;
 	default:
 		return ::DefWindowProcW(this->m_canvashwnd, msg, wp, lp);
 	}
 
 	return 0;
+}
+
+void pdfv::Tabs::updatePageCounter() const noexcept
+{
+	if (auto tab{ this->curTab() }; tab != nullptr && tab->second.pdfExists())
+	{
+		setText(
+			window.getStatusHandle(), MainWindow::StatusPages, w::status::DrawOp::def,
+			(std::wstring(L"Page: ") + std::to_wstring(tab->second.pageGetNum()) + L'/' + std::to_wstring(tab->second.pageGetCount())).c_str()
+		);
+	}
+	else
+	{
+		setText(window.getStatusHandle(), MainWindow::StatusPages, w::status::DrawOp::def, L"Page: NA");
+	}
+	
+}
+void pdfv::Tabs::updateZoom() const noexcept
+{
+	if (auto tab{ this->curTab() }; tab != nullptr && tab->second.pdfExists())
+	{
+		setText(
+			window.getStatusHandle(), MainWindow::StatusZoom, w::status::DrawOp::def,
+			(std::wstring(L"Zoom: ") + std::to_wstring(uint32_t(tab->zoom * 100.0f + 0.5f)) + L'%').c_str()
+		);
+	}
+	else
+	{
+		setText(window.getStatusHandle(), MainWindow::StatusZoom, w::status::DrawOp::def, L"Zoom: NA");
+	}
 }
 
 pdfv::Tabs::Tabs(HWND hwnd, HINSTANCE hInst, RECT size) noexcept
@@ -236,6 +244,10 @@ pdfv::Tabs::Tabs(HWND hwnd, HINSTANCE hInst, RECT size) noexcept
 				{
 					return TRUE;
 				}
+			}
+			else if (umsg == WM_KEYUP)
+			{
+				::SendMessageW(::GetParent(hwnd), umsg, wp, lp);
 			}
 
 			return ::DefSubclassProc(hwnd, umsg, wp, lp);
@@ -344,13 +356,18 @@ void pdfv::Tabs::move(xy<int> newpos) noexcept
 		w::moveWin(this->getTabsHandle(), this->m_pos.x, this->m_pos.y);
 	}
 }
-void pdfv::Tabs::redrawTabs() const noexcept
+void pdfv::Tabs::redrawTabs() noexcept
 {
 	w::redraw(this->getTabsHandle());
+	this->updateScrollbar();
+	this->updatePageCounter();
+	this->updateZoom();
 }
 void pdfv::Tabs::redrawCanvas() const noexcept
 {
 	w::redraw(this->getCanvasHandle());
+	this->updatePageCounter();
+	this->updateZoom();
 }
 
 [[nodiscard]] RECT pdfv::Tabs::s_calcCloseButton(RECT itemRect) noexcept
@@ -488,16 +505,15 @@ void pdfv::Tabs::selChange() noexcept
 {
 	this->m_tabindex = TabCtrl_GetCurSel(this->m_tabshwnd);
 
-	this->updateScrollbar();
-	this->curTab()->updatePageCounter();
-	this->curTab()->updateZoom();
-	w::redraw(this->m_canvashwnd);
+	this->redrawTabs();
 }
 
 void pdfv::Tabs::updateScrollbar() noexcept
 {
-	if (auto tab{ this->curTab() }; tab->second.pdfExists())
+	if (auto tab{ this->curTab() }; tab != nullptr && tab->second.pdfExists())
 	{
+		::ShowScrollBar(this->m_canvashwnd, SB_VERT, TRUE);
+
 		tab->yMaxScroll = tab->second.pageGetCount() - 1;
 		tab->page = std::min(int(tab->second.pageGetNum() - 1), tab->yMaxScroll);
 
@@ -509,6 +525,10 @@ void pdfv::Tabs::updateScrollbar() noexcept
 		si.nPage  = 1;
 		si.nPos   = tab->page;
 		::SetScrollInfo(this->m_canvashwnd, SB_VERT, &si, TRUE);
+	}
+	else
+	{
+		::ShowScrollBar(this->m_canvashwnd, SB_VERT, FALSE);
 	}
 }
 

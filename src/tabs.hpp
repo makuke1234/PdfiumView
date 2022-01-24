@@ -38,8 +38,6 @@ namespace pdfv
 		friend class pdfv::Tabs;
 		friend class pdfv::MainWindow;
 
-		void updatePageCounter() const noexcept;
-		void updateZoom() const noexcept;
 	};
 
 	class Tabs
@@ -84,6 +82,9 @@ namespace pdfv
 		static constexpr xy<int> s_cCloseButtonSz{ 20, 20 };
 
 		LRESULT tabsCanvasProc(UINT msg, WPARAM wp, LPARAM lp);
+
+		void updatePageCounter() const noexcept;
+		void updateZoom() const noexcept;
 
 	public:
 		Tabs() noexcept = default;
@@ -130,7 +131,7 @@ namespace pdfv
 		 * @brief Redraws the tab control
 		 * 
 		 */
-		void redrawTabs() const noexcept;
+		void redrawTabs() noexcept;
 		/**
 		 * @brief Redraws the tab canvas
 		 * 

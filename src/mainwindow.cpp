@@ -436,7 +436,7 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 		}
 		break;
 	case IDM_FILE_CLOSETAB:
-		if (mwnd.m_keyDown[L'W'])
+		if (mwnd.m_keyDown[L'W'] && HIWORD(wp) == 1)
 		{
 			break;
 		}
@@ -483,7 +483,7 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 		::SendMessageW(this->m_tabs->getCanvasHandle(), Tabs::WM_ZOOM, -WHEEL_DELTA / 10, 0);
 		break;
 	default:
-		if (const auto comp{ int(wp) - IDM_LIMIT }; comp >= 0 && comp < int(this->m_tabs->size()))
+		if (const auto comp{ int(LOWORD(wp)) - IDM_LIMIT }; comp >= 0 && comp < int(this->m_tabs->size()))
 		{
 			if (this->m_tabs->size() > 1)
 			{
@@ -506,7 +506,7 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 				{
 					auto it = this->m_tabs->rename(Tabs::defaulttitle);
 					(it)->second.pdfUnload();
-					this->m_tabs->redrawCanvas();
+					this->m_tabs->redrawTabs();
 				}
 			}
 		}
