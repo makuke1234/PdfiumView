@@ -16,6 +16,13 @@ namespace pdfv
 	public:
 		static inline const std::wstring defaulttitle{ PRODUCT_NAME };
 
+		enum StatusIndex : int
+		{
+			StatusGeneral,
+			StatusZoom,
+			StatusPages,
+		};
+
 	private:
 		MainWindow() noexcept;
 

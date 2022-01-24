@@ -2,6 +2,7 @@
 #include "mainwindow.hpp"
 
 #include <unordered_map>
+#include <algorithm>
 
 namespace pdfv
 {
@@ -93,6 +94,7 @@ void pdfv::TabObject::updatePDF() noexcept
 	DEBUGPRINT("pdfv::TabObject::updatePDF()\n");
 	this->updateScrollbar();
 	this->updatePageCounter();
+	this->updateZoom();
 }
 
 LRESULT CALLBACK pdfv::TabObject::tabObjectProcHub(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp)
@@ -221,6 +223,25 @@ LRESULT pdfv::TabObject::tabObjectProc(UINT uMsg, WPARAM wp, LPARAM lp)
 		}
 		break;
 	}
+	case TabObject::WM_ZOOM:
+		if (this->second.pdfExists())
+		{
+			auto prevzoom{ this->zoom };
+			this->zoom += float(int(wp)) / float(WHEEL_DELTA);
+			this->zoom = std::clamp(this->zoom, 1.0f, 10.0f);
+			if (prevzoom != this->zoom)
+			{
+				this->updateZoom();
+			}	
+		}
+		break;
+	case TabObject::WM_ZOOMRESET:
+		if (this->second.pdfExists() && this->zoom != 1.0f)
+		{
+			this->zoom = 1.0f;
+			this->updateZoom();
+		}
+		break;
 	case WM_COMMAND:
 		::SendMessageW(this->parent, WM_COMMAND, wp, lp);
 		break;
@@ -237,6 +258,7 @@ LRESULT pdfv::TabObject::tabObjectProc(UINT uMsg, WPARAM wp, LPARAM lp)
 		break;
 	case WM_CREATE:
 		this->updatePageCounter();
+		this->updateZoom();
 		break;
 	default:
 		return ::DefWindowProcW(this->tabhandle, uMsg, wp, lp);
@@ -267,13 +289,27 @@ void pdfv::TabObject::updatePageCounter() const noexcept
 	if (this->second.pdfExists())
 	{
 		setText(
-			window.getStatusHandle(), 1, w::status::DrawOp::def,
+			window.getStatusHandle(), MainWindow::StatusPages, w::status::DrawOp::def,
 			(std::wstring(L"Page: ") + std::to_wstring(this->second.pageGetNum()) + L'/' + std::to_wstring(this->second.pageGetCount())).c_str()
 		);
 	}
 	else
 	{
-		setText(window.getStatusHandle(), 1, w::status::DrawOp::def, L"Page: NA");
+		setText(window.getStatusHandle(), MainWindow::StatusPages, w::status::DrawOp::def, L"Page: NA");
+	}
+}
+void pdfv::TabObject::updateZoom() const noexcept
+{
+	if (this->second.pdfExists())
+	{
+		setText(
+			window.getStatusHandle(), MainWindow::StatusZoom, w::status::DrawOp::def,
+			(std::wstring(L"Zoom: ") + std::to_wstring(uint32_t(this->zoom * 100.0f + 0.5f)) + L'%').c_str()
+		);
+	}
+	else
+	{
+		setText(window.getStatusHandle(), MainWindow::StatusZoom, w::status::DrawOp::def, L"Zoom: NA");
 	}
 }
 
@@ -543,4 +579,5 @@ void pdfv::Tabs::selChange() noexcept
 	}
 	this->m_tabs[this->m_tabindex]->show();
 	this->m_tabs[this->m_tabindex]->updatePageCounter();
+	this->m_tabs[this->m_tabindex]->updateZoom();
 }

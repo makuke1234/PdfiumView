@@ -30,11 +30,16 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 
 # Changelog
 
-* 0.5 (planned)
-	* Fix bug, when closing current tab, the next tab doesn't render
-	* Show page numbers on status bar
+* 0.6 (planned)
+	* [ ] Revamped tab system
 	* [ ] Add more status bar functionality
 	* [ ] Add zooming capability
+
+* 0.5
+	* Fix bug, when closing current tab, the next tab doesn't render
+	* Show page numbers on status bar
+	* Show zoom on status bar, min 10%, max 1000%
+	* Add zooming hotkeys (no zooming functionality itself, yet)
 
 * 0.4
 	* Make about dialog always centered

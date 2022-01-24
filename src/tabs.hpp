@@ -15,8 +15,12 @@ namespace pdfv
 	class TabObject
 	{
 	public:
+		static constexpr UINT WM_ZOOM     { WM_APP };
+		static constexpr UINT WM_ZOOMRESET{ WM_APP + 1 };
+
 		std::wstring first;
 		pdfv::Pdfium second;
+		float zoom{ 1.0f };
 
 		TabObject() noexcept = delete;
 		TabObject(HWND tabshwnd, HINSTANCE hinst, RECT r) noexcept;
@@ -64,6 +68,7 @@ namespace pdfv
 
 		void updateScrollbar() noexcept;
 		void updatePageCounter() const noexcept;
+		void updateZoom() const noexcept;
 	};
 
 	class Tabs

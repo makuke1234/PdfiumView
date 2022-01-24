@@ -42,7 +42,7 @@ void pdfv::MainWindow::aboutBox() noexcept
 void pdfv::MainWindow::setStatusParts() const noexcept
 {
 	auto w{ this->m_usableArea.x };
-	w::status::setParts(this->m_statushwnd, { w - dip(200, dpi.x), w - dip(17, dpi.x) });
+	w::status::setParts(this->m_statushwnd, { w - dip(210, dpi.x), w - dip(120, dpi.x), w - dip(17, dpi.x) });
 }
 
 pdfv::MainWindow::MainWindow() noexcept
@@ -473,6 +473,15 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 		this->m_tabs.select(idx);
 		break;
 	}
+	case IDC_ZOOMRESET:
+		::SendMessageW(this->m_tabs.m_tabs[this->m_tabs.m_tabindex]->tabhandle, TabObject::WM_ZOOMRESET, 0, 0);
+		break;
+	case IDC_ZOOMPLUS:
+		::SendMessageW(this->m_tabs.m_tabs[this->m_tabs.m_tabindex]->tabhandle, TabObject::WM_ZOOM, WHEEL_DELTA / 10, 0);
+		break;
+	case IDC_ZOOMMINUS:
+		::SendMessageW(this->m_tabs.m_tabs[this->m_tabs.m_tabindex]->tabhandle, TabObject::WM_ZOOM, -WHEEL_DELTA / 10, 0);
+		break;
 	default:
 		if (const auto comp{ int(wp) - IDM_LIMIT }; comp >= 0 && comp < int(this->m_tabs.size()))
 		{
@@ -529,9 +538,9 @@ void pdfv::MainWindow::wOnMousewheel(WPARAM wp) noexcept
 	static int delta{ 0 };
 
 	auto p{ w::getCur() };
-	auto pt1{ xy<int>{ p.x, p.y } - mwnd.m_pos };
-	auto pt2{ mwnd.m_tabs.m_pos  + mwnd.m_tabs.m_offset };
-	auto sz { mwnd.m_tabs.m_size - mwnd.m_tabs.m_offset };
+	auto pt1{ xy<int>{ p.x, p.y } - this->m_pos };
+	auto pt2{ this->m_tabs.m_pos  + this->m_tabs.m_offset };
+	auto sz { this->m_tabs.m_size - this->m_tabs.m_offset };
 	if (!(pt1.x >= pt2.x && pt1.x <= (pt2.x + sz.x) &&
 		pt1.y >= pt2.y && pt1.y <= (pt2.y + sz.y)))
 	{
@@ -547,6 +556,12 @@ void pdfv::MainWindow::wOnMousewheel(WPARAM wp) noexcept
 	{
 		// Reset scrolling if zooming is applied
 		delta = 0;
+		::SendMessageW(
+			this->m_tabs.m_tabs[this->m_tabs.m_tabindex]->tabhandle,
+			TabObject::WM_ZOOM,
+			newdelta,
+			0
+		);
 	}
 	else
 	{
@@ -556,7 +571,7 @@ void pdfv::MainWindow::wOnMousewheel(WPARAM wp) noexcept
 		for (int i = std::abs(delta); i >= WHEEL_DELTA; i -= WHEEL_DELTA)
 		{
 			::SendMessageW(
-				mwnd.m_tabs.m_tabs[mwnd.m_tabs.m_tabindex]->tabhandle,
+				this->m_tabs.m_tabs[mwnd.m_tabs.m_tabindex]->tabhandle,
 				WM_VSCROLL,
 				MAKELONG(dir, 0),
 				0
