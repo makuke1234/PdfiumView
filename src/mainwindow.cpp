@@ -159,7 +159,7 @@ pdfv::MainWindow::~MainWindow() noexcept
 
 [[nodiscard]] bool pdfv::MainWindow::run(const wchar_t * fname, int nCmdShow) noexcept
 {
-	DEBUGPRINT("pdfv::MainWindow::run(%p, %d)\n", static_cast<const void *>(fname), nCmdShow);
+	DEBUGPRINT("pdfv::MainWindow::run(%p, %s, %d)\n", static_cast<const void *>(fname), fname, nCmdShow);
 	this->m_hwnd = ::CreateWindowExW(
 		0,
 		APP_CLASSNAME,

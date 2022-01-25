@@ -9,10 +9,12 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR cmdLine, int nCmdShow)
 	int argc;
 	auto argv{ pdfv::getArgs(cmdLine, argc) };
 
+	DEBUGPRINT("argc: %d, argv: %p", argc, static_cast<void *>(argv.get()));
+
 	wchar_t fname[MAX_PATH]{};
-	if (argv != nullptr && argc > 1)
+	if (argv != nullptr && argc > 0)
 	{
-		::GetFullPathNameW(argv.get()[1], MAX_PATH, fname, nullptr);
+		::GetFullPathNameW(argv.get()[0], MAX_PATH, fname, nullptr);
 	}
 
 	pdfv::OtherWindow otherWnd{ fname };

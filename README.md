@@ -38,6 +38,7 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 	* Revamp tab system, everything rendered on the tab page itself
 	* Improved the look n' feel
 	* Fix individual file compiling/linking
+	* Fix bug, not possible to open PDF's with program arguments
 
 * 0.5
 	* Fix bug, when closing current tab, the next tab doesn't render
