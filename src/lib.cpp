@@ -240,7 +240,6 @@ pdfv::error::Errorcode pdfv::Pdfium::pageRender(HDC dc, pdfv::xy<int> pos, pdfv:
 		void * args[]{ this, dc, &newsize };
 		this->m_optRenderer.putPage(
 			this->m_fpagenum,
-			pos,
 			newsize,
 			[](void * args) -> hdc::Renderer::RenderT
 			{

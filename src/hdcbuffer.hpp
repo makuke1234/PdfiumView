@@ -15,7 +15,7 @@ namespace pdfv::hdc
 		struct RenderStats
 		{
 			RenderT hrender;
-			xy<int> pos, size;
+			xy<int> size;
 		};
 
 	private:
@@ -45,7 +45,7 @@ namespace pdfv::hdc
 		 * @param render Rendering function, returns RenderT object
 		 * @param renderArg Argument to the rendering function
 		 */
-		void putPage(std::size_t pageIdx, xy<int> pos, xy<int> size, std::function<RenderT (void *)> render, void * renderArg);
+		void putPage(std::size_t pageIdx, xy<int> size, std::function<RenderT (void *)> render, void * renderArg);
 
 		/**
 		 * @param pageIdx Page index

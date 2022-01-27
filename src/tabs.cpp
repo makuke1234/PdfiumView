@@ -135,6 +135,8 @@ LRESULT pdfv::Tabs::tabsCanvasProc(UINT msg, WPARAM wp, LPARAM lp)
 			si.fMask  = SIF_POS;
 			si.nPos   = tab->page;
 			::SetScrollInfo(this->m_canvashwnd, SB_VERT, &si, true);
+
+			::SendMessageW(this->getCanvasHandle(), Tabs::WM_ZOOMRESET, 0, 0);
 		}
 		break;
 	}
@@ -144,7 +146,7 @@ LRESULT pdfv::Tabs::tabsCanvasProc(UINT msg, WPARAM wp, LPARAM lp)
 		if (tab != nullptr && tab->second.pdfExists())
 		{
 			auto prevzoom{ tab->zoom };
-			tab->zoom += float(int(wp)) / float(WHEEL_DELTA);
+			tab->zoom += float(int(wp)) / float(10 * WHEEL_DELTA);
 			tab->zoom = std::clamp(tab->zoom, 1.0f, 10.0f);
 			if (prevzoom != tab->zoom)
 			{
