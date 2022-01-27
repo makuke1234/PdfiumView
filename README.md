@@ -30,11 +30,13 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 
 # Changelog
 
-* 0.7 (planned)
-	* Fix bugs with command-line usage
+* 0.8 (planned)
 	* [ ] Fully get rid of flickering (as much as possible anyways)
 	* [ ] Add more status bar functionality
 	* [ ] Add zooming capability
+
+* 0.7
+	* Fix bugs with command-line usage
 
 * 0.6
 	* Revamp tab system, everything rendered on the tab page itself
