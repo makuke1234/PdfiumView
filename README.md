@@ -31,6 +31,8 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 # Changelog
 
 * 0.7 (planned)
+	* Fix bugs with command-line usage
+	* [ ] Fully get rid of flickering (as much as possible anyways)
 	* [ ] Add more status bar functionality
 	* [ ] Add zooming capability
 

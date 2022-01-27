@@ -36,7 +36,6 @@ namespace pdfv
 		int page{};
 
 		friend class pdfv::Tabs;
-		friend class pdfv::MainWindow;
 
 	};
 
@@ -96,9 +95,9 @@ namespace pdfv
 		 */
 		Tabs(HWND hwnd, HINSTANCE hInst, RECT size) noexcept;
 		Tabs(const Tabs & other) = delete;
-		Tabs(Tabs && other) noexcept;
+		Tabs(Tabs && other) noexcept = delete;
 		Tabs & operator=(const Tabs & other) = delete;
-		Tabs & operator=(Tabs && other) noexcept;
+		Tabs & operator=(Tabs && other) noexcept = delete;
 		~Tabs() noexcept;
 
 		static LRESULT CALLBACK tabsCanvasProcHub(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);

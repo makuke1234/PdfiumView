@@ -278,13 +278,12 @@ namespace pdfv
 	using ArgVecT = w::Safeptr<wchar_t **, ArgVecFree>;
 
 	/**
-	 * @brief Get wide-stringed argument vector from command line wide-string
+	 * @brief Get wide-string argument vector from command line arguments
 	 * 
-	 * @param cmdLine Command line wide-string
 	 * @param argc Reference to argument vector length, will be valued in function
-	 * @return std::unique_ptr<wchar_t *, decltype(pdfv::getArgsFree)> Argument vector
+	 * @return std::Safeptr<wchar_t **, ArgVecFree> Argument vector
 	 */
-	[[nodiscard]] ArgVecT getArgs(LPWSTR cmdLine, int & argc) noexcept;
+	[[nodiscard]] ArgVecT getArgs(int & argc) noexcept;
 	
 	/**
 	 * @brief Initialise common controls
@@ -712,7 +711,7 @@ namespace pdfv
 	 * @param wcex Reference to window class extended structure
 	 * @return ATOM Non-zero on success
 	 */
-	[[nodiscard]] ATOM registerClasses(WNDCLASSEXW & wcex) noexcept;
+	[[nodiscard]] ATOM registerClass(WNDCLASSEXW & wcex) noexcept;
 	/**
 	 * @brief Asks user info with a given message and window title in a dialog-like window
 	 * 

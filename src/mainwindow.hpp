@@ -9,8 +9,6 @@
 
 namespace pdfv
 {
-	class OtherWindow;
-
 	class MainWindow
 	{
 	public:
@@ -45,9 +43,9 @@ namespace pdfv
 		std::unique_ptr<pdfv::Tabs> m_tabs;
 		pdfv::OpenDialog m_openDialog{ 2048 };
 
-		w::SafeGDI<HBRUSH> m_redBrush{ ::CreateSolidBrush(RGB(237, 28, 36)) };
+		w::SafeGDI<HBRUSH> m_redBrush      { ::CreateSolidBrush(RGB(237,  28,  36)) };
 		w::SafeGDI<HBRUSH> m_brightRedBrush{ ::CreateSolidBrush(RGB(255, 128, 128)) };
-		w::SafeGDI<HBRUSH> m_darkRedBrush{ ::CreateSolidBrush(RGB(200, 0, 0)) };
+		w::SafeGDI<HBRUSH> m_darkRedBrush  { ::CreateSolidBrush(RGB(200,   0,   0)) };
 		std::atomic<bool> m_highlighted{ false };
 		std::atomic<std::size_t> m_highlightedIdx{ 0 };
 		HANDLE m_moveThread{ nullptr };
@@ -62,20 +60,19 @@ namespace pdfv
 		 */
 		[[nodiscard]] bool intersectsTabClose() noexcept;
 
-		friend class OtherWindow;
 		friend class Tabs;
 		/**
 		 * @brief Shows about dialog box
 		 * 
 		 */
-		void aboutBox() noexcept;
+		void showAboutBox() noexcept;
 		std::wstring m_aboutText{ DEFAULT_ABOUT_TEXT };
 
 		void setStatusParts() const noexcept;
 
 	public:
 		//
-		//	A singleton instance of the class supported by a private constructor
+		//	A singleton instance of the class, supported by a private constructor
 		//
 		static MainWindow mwnd;
 

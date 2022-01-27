@@ -27,7 +27,7 @@ pdfv::MainWindow pdfv::MainWindow::mwnd;
 	return false;
 }
 
-void pdfv::MainWindow::aboutBox() noexcept
+void pdfv::MainWindow::showAboutBox() noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::aboutBox()\n");
 	::DialogBoxParamW(
@@ -123,7 +123,6 @@ pdfv::MainWindow::~MainWindow() noexcept
 	::SetProcessDPIAware();
 
 	// Init common controls
-	
 	if (!initCC()) [[unlikely]]
 	{
 		return false;
@@ -137,18 +136,18 @@ pdfv::MainWindow::~MainWindow() noexcept
 	this->m_wcex.lpszMenuName = MAKEINTRESOURCEW(IDR_MAINMENU);
 	this->m_wcex.hIconSm      = ::LoadIconW(hinst, IDI_APPLICATION);
 
-	if (!registerClasses(this->m_wcex)) [[unlikely]]
+	if (!registerClass(this->m_wcex)) [[unlikely]]
 	{
 		error::lastErr = error::registerclass;
 		return false;
 	}
 
+	this->m_wcex.style         = 0;
 	this->m_wcex.lpfnWndProc   = &pdfv::Tabs::tabsCanvasProcHub;
 	this->m_wcex.lpszClassName = pdfv::Tabs::c_className;
 	this->m_wcex.lpszMenuName  = nullptr;
-	this->m_wcex.hbrBackground = ::CreateSolidBrush(RGB(255, 255, 255));
 	
-	if (!registerClasses(this->m_wcex)) [[unlikely]]
+	if (!registerClass(this->m_wcex)) [[unlikely]]
 	{
 		error::lastErr = error::registertabscanvas;
 		return false;
@@ -450,7 +449,7 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 	case IDM_HELP_ABOUT:
 		if (this->m_helpAvailable)
 		{
-			this->aboutBox();
+			this->showAboutBox();
 		}
 		break;
 	case IDC_TABULATE:

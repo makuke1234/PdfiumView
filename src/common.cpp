@@ -140,10 +140,9 @@ void pdfv::ArgVecFree::operator()(wchar_t ** obj) noexcept
 	::LocalFree(obj);
 };
 
-[[nodiscard]] pdfv::ArgVecT pdfv::getArgs(LPWSTR cmdLine, int & argc) noexcept
+[[nodiscard]] pdfv::ArgVecT pdfv::getArgs(int & argc) noexcept
 {
-	DEBUGPRINT("pdfv::getArgs(%p, %p)\n", static_cast<void *>(cmdLine), static_cast<void *>(&argc));
-	wchar_t ** argv{ ::CommandLineToArgvW(cmdLine, &argc) };
+	wchar_t ** argv{ ::CommandLineToArgvW(::GetCommandLineW(), &argc) };
 	if (argv == nullptr) [[unlikely]]
 	{
 		argc = 0;
@@ -180,7 +179,7 @@ template class pdfv::xy<float>;
 
 pdfv::xy<float> pdfv::dpi{ 1.0f, 1.0f };
 
-[[nodiscard]] ATOM pdfv::registerClasses(WNDCLASSEXW & wcex) noexcept
+[[nodiscard]] ATOM pdfv::registerClass(WNDCLASSEXW & wcex) noexcept
 {
 	DEBUGPRINT("pdfv::RegisterClasses(%p)\n", static_cast<void *>(&wcex));
 	if (wcex.cbSize == 0)
@@ -337,7 +336,7 @@ namespace pdfv
 	wc.lpszClassName = L"AskInfoClass";
 	wc.lpszMenuName  = nullptr;
 
-	if (!registerClasses(wc)) [[unlikely]]
+	if (!registerClass(wc)) [[unlikely]]
 	{
 		return {};
 	}

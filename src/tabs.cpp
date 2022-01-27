@@ -269,35 +269,6 @@ pdfv::Tabs::Tabs(HWND hwnd, HINSTANCE hInst, RECT size) noexcept
 		this
 	);
 }
-pdfv::Tabs::Tabs(pdfv::Tabs && other) noexcept
-	: m_parent(other.m_parent), m_tabshwnd(other.m_tabshwnd),
-	m_canvashwnd(other.m_canvashwnd), m_pos(std::move(other.m_pos)),
-	m_size(std::move(other.m_size)), m_offset(std::move(other.m_offset)),
-	m_tabs(std::move(other.m_tabs)), m_tabindex(other.m_tabindex)
-{
-	other.m_parent     = nullptr;
-	other.m_tabshwnd   = nullptr;
-	other.m_canvashwnd = nullptr;
-	other.m_tabindex   = 0;
-}
-pdfv::Tabs & pdfv::Tabs::operator=(pdfv::Tabs && other) noexcept
-{
-	this->m_parent     = other.m_parent;
-	this->m_tabshwnd   = other.m_tabshwnd;
-	this->m_canvashwnd = other.m_canvashwnd;
-	this->m_pos        = std::move(other.m_pos);
-	this->m_size       = std::move(other.m_size);
-	this->m_offset     = std::move(other.m_offset);
-	this->m_tabs       = std::move(other.m_tabs);
-	this->m_tabindex   = other.m_tabindex;
-
-	other.m_parent     = nullptr;
-	other.m_tabshwnd   = nullptr;
-	other.m_canvashwnd = nullptr;
-	other.m_tabindex   = 0;
-
-	return *this;
-}
 pdfv::Tabs::~Tabs() noexcept
 {
 	this->m_tabs.clear();
