@@ -8,6 +8,8 @@
 A small and compact PDF viewer for Windows, written in C++ utilising [PDFium library](https://pdfium.googlesource.com/pdfium/).<br>
 *Binaries for PDFium can be obtained [here](https://github.com/bblanchon/pdfium-binaries).*
 
+As of 6th June 2022 the binaries are compiled with GCC 12.1.0 and use PDFium version 104.0.5104.0
+
 
 # Obtaining
 
