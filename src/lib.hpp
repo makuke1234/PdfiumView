@@ -151,5 +151,7 @@ namespace pdfv
 		{
 			return this->m_fdoc != nullptr;
 		}
+
+		void flush() noexcept;
 	};
 }

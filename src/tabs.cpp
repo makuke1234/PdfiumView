@@ -13,6 +13,27 @@ pdfv::TabObject::TabObject(std::wstring && v1, pdfv::Pdfium && v2)
 {
 	this->first.append(pdfv::Tabs::padding);
 }
+pdfv::TabObject::TabObject(TabObject && other) noexcept
+	: first(std::move(other.first)), second(std::move(other.second)), zoom(other.zoom),
+	yMaxScroll(other.yMaxScroll), yMinScroll(other.yMinScroll), page(other.page)
+{
+}
+pdfv::TabObject & pdfv::TabObject::operator=(TabObject && other) noexcept
+{
+	this->first      = std::move(other.first);
+	this->second     = std::move(other.second);
+	this->zoom       = other.zoom;
+	
+	this->yMaxScroll = other.yMaxScroll;
+	this->yMinScroll = other.yMinScroll;
+	this->page       = other.page;
+
+	return *this;
+}
+pdfv::TabObject::~TabObject() noexcept
+{
+	this->second.flush();
+}
 
 
 
@@ -334,9 +355,9 @@ void pdfv::Tabs::move(xy<int> newpos) noexcept
 		w::moveWin(this->getTabsHandle(), this->m_pos.x, this->m_pos.y);
 	}
 }
-void pdfv::Tabs::redrawTabs() noexcept
+void pdfv::Tabs::redrawTabs(bool erase) noexcept
 {
-	w::redraw(this->getTabsHandle());
+	w::redraw(this->getTabsHandle(), erase);
 	this->updateScrollbar();
 	this->updatePageCounter();
 	this->updateZoom();
@@ -398,6 +419,7 @@ void pdfv::Tabs::remove(std::wstring_view title) noexcept
 	{
 		if ((it)->first == title)
 		{
+			// Remove this page from buffer
 			this->m_tabs.erase(it);
 			TabCtrl_DeleteItem(this->m_tabshwnd, index);
 			break;
@@ -463,7 +485,7 @@ pdfv::Tabs::ListType::iterator pdfv::Tabs::rename(std::wstring_view title, const
 		return this->m_tabs[index].first;
 	}
 }
-void pdfv::Tabs::select(const ssize_t index) noexcept
+void pdfv::Tabs::select(const ssize_t index, bool erase) noexcept
 {
 	if (index == Tabs::endpos)
 	{
@@ -473,17 +495,17 @@ void pdfv::Tabs::select(const ssize_t index) noexcept
 	{
 		TabCtrl_SetCurSel(this->m_tabshwnd, std::clamp(index, ssize_t(0), ssize_t(this->m_tabs.size() - 1)));
 	}
-	this->selChange();
+	this->selChange(erase);
 }
 [[nodiscard]] std::size_t pdfv::Tabs::size() const noexcept
 {
 	return this->m_tabs.size();
 }
-void pdfv::Tabs::selChange() noexcept
+void pdfv::Tabs::selChange(bool erase) noexcept
 {
 	this->m_tabindex = TabCtrl_GetCurSel(this->m_tabshwnd);
 
-	this->redrawTabs();
+	this->redrawTabs(erase);
 }
 
 void pdfv::Tabs::updateScrollbar() noexcept

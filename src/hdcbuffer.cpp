@@ -30,4 +30,8 @@ pdfv::hdc::Renderer::RenderT & pdfv::hdc::Renderer::getPage(std::size_t pageIdx)
 {
 	return this->bmBuffer.at(pageIdx).hrender;
 }
+void pdfv::hdc::Renderer::removePage(std::size_t pageIdx) noexcept
+{
+	this->bmBuffer.erase(pageIdx);
+}
 

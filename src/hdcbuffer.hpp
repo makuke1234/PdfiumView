@@ -52,5 +52,12 @@ namespace pdfv::hdc
 		 * @return RenderT& Reference to requested page's render object
 		 */
 		RenderT & getPage(std::size_t pageIdx);
+
+		/**
+		 * @brief Removes pre-rendered page from buffer
+		 * 
+		 * @param pageIdx Page index
+		 */
+		void removePage(std::size_t pageIdx) noexcept;
 	};
 }

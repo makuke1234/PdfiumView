@@ -24,7 +24,7 @@ pdfv::Pdfium::Pdfium() noexcept
 pdfv::Pdfium::Pdfium(Pdfium && other) noexcept
 	: m_fdoc(other.m_fdoc), m_fpage(other.m_fpage),
 	m_fpagenum(other.m_fpagenum), m_numPages(other.m_numPages),
-	m_buf(std::move(other.m_buf))
+	m_buf(std::move(other.m_buf)), m_optRenderer(std::move(other.m_optRenderer))
 {
 	DEBUGPRINT("pdfv::Pdfium::Pdfium(%p)\n", static_cast<void *>(&other));
 	other.m_fdoc  = nullptr;
@@ -34,11 +34,12 @@ pdfv::Pdfium & pdfv::Pdfium::operator=(Pdfium && other) noexcept
 {
 	DEBUGPRINT("pdfv::Pdfium::operator=(%p)\n", static_cast<void *>(&other));
 
-	this->m_fdoc     = other.m_fdoc;
-	this->m_fpage    = other.m_fpage;
-	this->m_fpagenum = other.m_fpagenum;
-	this->m_numPages = other.m_numPages;
-	this->m_buf      = std::move(other.m_buf);
+	this->m_fdoc        = other.m_fdoc;
+	this->m_fpage       = other.m_fpage;
+	this->m_fpagenum    = other.m_fpagenum;
+	this->m_numPages    = other.m_numPages;
+	this->m_buf         = std::move(other.m_buf);
+	this->m_optRenderer = std::move(other.m_optRenderer);
 
 	other.m_fdoc  = nullptr;
 	other.m_fpage = nullptr;
@@ -258,8 +259,8 @@ pdfv::error::Errorcode pdfv::Pdfium::pageRender(HDC dc, pdfv::xy<int> pos, pdfv:
 				DEBUGPRINT("render!\n");
 				auto argv{ reinterpret_cast<void **>(args) };
 
-				auto self{ static_cast<Pdfium *>(argv[0]) };
-				auto dc  { static_cast<HDC>(argv[1]) };
+				auto self{ static_cast<Pdfium * >(argv[0]) };
+				auto dc  { static_cast<HDC      >(argv[1]) };
 				auto size{ static_cast<xy<int> *>(argv[2]) };
 
 				auto memdc { ::CreateCompatibleDC(dc) };
@@ -297,4 +298,9 @@ pdfv::error::Errorcode pdfv::Pdfium::pageRender(HDC dc, pdfv::xy<int> pos, pdfv:
 	{
 		return error::pdf_page;
 	}
+}
+
+void pdfv::Pdfium::flush() noexcept
+{
+	this->m_optRenderer.clear();
 }

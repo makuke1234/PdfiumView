@@ -24,10 +24,10 @@ namespace pdfv
 		TabObject(std::wstring_view v1, pdfv::Pdfium && v2 = pdfv::Pdfium());
 		TabObject(std::wstring && v1, pdfv::Pdfium && v2 = pdfv::Pdfium());
 		TabObject(const TabObject & other) = delete;
-		TabObject(TabObject && other) noexcept = default;
+		TabObject(TabObject && other) noexcept;
 		TabObject & operator=(const TabObject & other) = delete;
-		TabObject & operator=(TabObject && other) noexcept = default;
-		~TabObject() noexcept = default;
+		TabObject & operator=(TabObject && other) noexcept;
+		~TabObject() noexcept;
 		
 	private:
 
@@ -132,8 +132,10 @@ namespace pdfv
 		/**
 		 * @brief Redraws the tab control
 		 * 
+		 * @param erase Whether to erase the control
+		 * 
 		 */
-		void redrawTabs() noexcept;
+		void redrawTabs(bool erase = false) noexcept;
 		/**
 		 * @brief Redraws the tab canvas
 		 * 
@@ -185,8 +187,9 @@ namespace pdfv
 		 * @brief Selects a tab, makes it active
 		 * 
 		 * @param index Tab index, Tabs::endpos by default
+		 * @param erase Controls whether to erase the tab
 		 */
-		void select(const ssize_t index = Tabs::endpos) noexcept;
+		void select(const ssize_t index = Tabs::endpos, bool erase = false) noexcept;
 		/**
 		 * @return std::size_t Number of tab currently present
 		 */
@@ -194,8 +197,9 @@ namespace pdfv
 		/**
 		 * @brief Handles the tab control active tab changes
 		 * 
+		 * @param erase Controls whether to erase the tab
 		 */
-		void selChange() noexcept;
+		void selChange(bool erase = false) noexcept;
 
 		void updateScrollbar() noexcept;
 
