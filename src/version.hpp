@@ -1,7 +1,7 @@
 #pragma once
 
 #define APP_CLASSNAME  L"PdfiumViewCpp"
-#define VERSION_STRING L"0.8"
+#define VERSION_STRING L"0.9b RC1"
 #define PRODUCT_NAME   L"PdfiumView"
 #define APP_NAME PRODUCT_NAME L" v" VERSION_STRING
 
@@ -19,8 +19,8 @@
 	" * Ability to open hyperlinks/websites\n\n" \
 	"The project is open for any feature requests. Post them under the Issues tab in GitHub."
 
-#define VERSION_SEQUENCE      0,8
-#define VERSION_SEQUENCE_STR "0.8"
+#define VERSION_SEQUENCE      0,9
+#define VERSION_SEQUENCE_STR "0.9"
 
 #define DEFAULT_OPEN_FILTER L""
 #define DEFAULT_OPEN_TITLE  L""
