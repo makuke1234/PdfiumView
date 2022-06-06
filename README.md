@@ -31,12 +31,14 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 
 # Changelog
 
-* 0.8 (planned)
+* 0.9 (planned)
+	* [ ] Add more status bar functionality
+	* [ ] Add zooming capability itself
+
+* 0.8
 	* Fully get rid of flickering (as much as possible anyways)
 	* Reset zoom on page change
 	* Make zooming less aggressive (+- 10% at a time)
-	* [ ] Add more status bar functionality
-	* [ ] Add zooming capability itself
 
 * 0.7
 	* Fix bugs with command-line usage
