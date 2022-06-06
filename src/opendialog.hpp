@@ -35,7 +35,7 @@ namespace pdfv
 		OpenDialog(OpenDialog && other) noexcept;
 		OpenDialog & operator=(const OpenDialog & other);
 		OpenDialog & operator=(OpenDialog && other) noexcept;
-		~OpenDialog() noexcept = default;
+		~OpenDialog() noexcept;
 
 		/**
 		 * @brief Opens dialog file open dialog

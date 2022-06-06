@@ -2,8 +2,6 @@
 
 #include <vector>
 
-// Initialise static class member variable
-pdfv::MainWindow pdfv::MainWindow::mwnd;
 
 [[nodiscard]] bool pdfv::MainWindow::intersectsTabClose() noexcept
 {
@@ -51,8 +49,8 @@ pdfv::MainWindow::MainWindow() noexcept
 	
 	auto screen{ ::GetDC(nullptr) };
 	dpi = {
-		f(::GetDeviceCaps(screen, LOGPIXELSX)) / 96.0f,
-		f(::GetDeviceCaps(screen, LOGPIXELSY)) / 96.0f
+		f32(::GetDeviceCaps(screen, LOGPIXELSX)) / 96.0f,
+		f32(::GetDeviceCaps(screen, LOGPIXELSY)) / 96.0f
 	};
 	::DeleteDC(screen);
 
@@ -159,6 +157,7 @@ pdfv::MainWindow::~MainWindow() noexcept
 [[nodiscard]] bool pdfv::MainWindow::run(const wchar_t * fname, int nCmdShow) noexcept
 {
 	DEBUGPRINT("pdfv::MainWindow::run(%p, %s, %d)\n", static_cast<const void *>(fname), fname, nCmdShow);
+	std::pair<MainWindow *, const wchar_t *> initPair{ this, fname };
 	this->m_hwnd = ::CreateWindowExW(
 		0,
 		APP_CLASSNAME,
@@ -171,7 +170,7 @@ pdfv::MainWindow::~MainWindow() noexcept
 		nullptr,
 		nullptr,
 		this->m_hInst,
-		const_cast<wchar_t *>(fname)
+		&initPair
 	);
 	if (this->getHandle() == nullptr) [[unlikely]]
 	{
@@ -288,64 +287,89 @@ int pdfv::MainWindow::message(LPCWSTR message, UINT type) const noexcept
 
 LRESULT CALLBACK pdfv::MainWindow::windowProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp) noexcept
 {
+	MainWindow * self{ nullptr };
+	if (uMsg == WM_CREATE) [[unlikely]]
+	{
+		auto cs{ reinterpret_cast<CREATESTRUCTW *>(lp) };
+		auto vals = static_cast<std::pair<MainWindow *, const wchar_t *> *>(cs->lpCreateParams);
+		self = vals->first;
+		w::setPtr(hwnd, self);
+		cs->lpCreateParams = const_cast<wchar_t *>(vals->second);
+	}
+	else [[likely]]
+	{
+		self = w::getPtr<MainWindow *>(hwnd);
+	}
+
+	if (self != nullptr) [[likely]]
+	{
+		return self->intWindowProc(hwnd, uMsg, wp, lp);
+	}
+	else [[unlikely]]
+	{
+		return ::DefWindowProcW(hwnd, uMsg, wp, lp);
+	}
+}
+LRESULT pdfv::MainWindow::intWindowProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp) noexcept
+{
 	switch (uMsg)
 	{
 	case WM_DRAWITEM:
-		return mwnd.wOnDrawItem(lp);
+		return this->wOnDrawItem(lp);
 	case WM_ERASEBKGND:
 		return TRUE;
 	case WM_COMMAND:
-		mwnd.wOnCommand(wp);
+		this->wOnCommand(wp);
 		break;
 	case WM_KEYDOWN:
-		mwnd.m_keyDown[wp] = true;
+		this->m_keyDown[wp] = true;
 		[[fallthrough]];
 	case WM_SPECIALKEYDOWN:
-		mwnd.wOnKeydown(wp);
+		this->wOnKeydown(wp);
 		break;
 	case WM_KEYUP:
 		DEBUGPRINT("Key up %d!\n", wp);
-		mwnd.m_keyDown[wp] = false;
+		this->m_keyDown[wp] = false;
 		break;
 	case WM_MOUSEWHEEL:
-		mwnd.wOnMousewheel(wp);
+		this->wOnMousewheel(wp);
 		break;
 	case WM_LBUTTONDOWN:
-		mwnd.wOnLButtonDown(wp, lp);
+		this->wOnLButtonDown(wp, lp);
 		break;
 	case WM_LBUTTONUP:
-		mwnd.wOnLButtonUp(wp, lp);
+		this->wOnLButtonUp(wp, lp);
 		break;
 	case WM_NOTIFY:
-		return mwnd.wOnNotify(lp);
+		return this->wOnNotify(lp);
 	case WM_MOVE:
-		mwnd.wOnMove(lp);
+		this->wOnMove(lp);
 		break;
 	case WM_SIZING:
-		mwnd.wOnSizing(wp, lp);
+		this->wOnSizing(wp, lp);
 		break;
 	case WM_SIZE:
-		mwnd.wOnSize();
+		this->wOnSize();
 		break;
 	case WM_CLOSE:
 		::DestroyWindow(hwnd);
-		mwnd.m_hwnd = nullptr;
+		this->m_hwnd = nullptr;
 		break;
 	case WM_DESTROY:
 		::PostQuitMessage(pdfv::error::success);
 		break;
 	case WM_CREATE:
-		mwnd.wOnCreate(hwnd, lp);
+		this->wOnCreate(hwnd, lp);
 		break;
 	case WM_COPYDATA:
-		mwnd.wOnCopydata(lp);
+		this->wOnCopydata(lp);
 		break;
 	case WM_MOUSEMOVE:
 	case pdfv::MainWindow::WM_TABMOUSEMOVE:
-		mwnd.wOnTabMouseMove(wp, lp);
+		this->wOnTabMouseMove(wp, lp);
 		break;
 	case pdfv::MainWindow::WM_BRINGTOFRONT:
-		mwnd.wOnBringToFront();
+		this->wOnBringToFront();
 		break;
 	default:
 		return ::DefWindowProcW(hwnd, uMsg, wp, lp);
@@ -435,11 +459,11 @@ void pdfv::MainWindow::wOnCommand(WPARAM wp) noexcept
 		}
 		break;
 	case IDM_FILE_CLOSETAB:
-		if (mwnd.m_keyDown[L'W'] && HIWORD(wp) == 1)
+		if (this->m_keyDown[L'W'] && HIWORD(wp) == 1)
 		{
 			break;
 		}
-		mwnd.m_keyDown[L'W'] = true;
+		this->m_keyDown[L'W'] = true;
 		// Close current tab
 		::SendMessageW(this->getHandle(), WM_COMMAND, IDM_LIMIT + this->m_tabs->m_tabindex, 0);
 		break;
@@ -724,14 +748,14 @@ void pdfv::MainWindow::wOnCreate(HWND hwnd, LPARAM lp) noexcept
 
 	clir.bottom = clir.top + (clir.bottom - clir.top) - (statusr.bottom - statusr.top);
 
-	this->m_tabs = std::make_unique<Tabs>(hwnd, this->getHinst(), clir);
+	this->m_tabs = std::make_unique<Tabs>(*this, hwnd, this->getHinst(), clir);
 	w::setFont(this->m_tabs->getTabsHandle(), this->getDefFont());
 
 	this->m_tabs->insert(Tabs::defaulttitle);
 
 	// Open PDF if any
 	const wchar_t * fname{ static_cast<wchar_t *>(reinterpret_cast<CREATESTRUCTW *>(lp)->lpCreateParams) };
-	if (fname != nullptr && fname[0] != '\0')
+	if ((fname != nullptr) && (fname[0] != '\0'))
 	{
 		// Open pdf
 		std::wstring_view fnv(fname);
@@ -870,7 +894,7 @@ void pdfv::MainWindow::openPdfFile(std::wstring_view file) noexcept
 		it = this->m_tabs->insert(fshort);
 	}
 	
-	(it)->second.pdfLoad(std::wstring(file));
+	(it)->second.pdfLoad(*this, std::wstring(file));
 	
 	this->m_tabs->select();
 }

@@ -1,7 +1,7 @@
 #pragma once
 
 #define APP_CLASSNAME  L"PdfiumViewCpp"
-#define VERSION_STRING L"0.8b pre1"
+#define VERSION_STRING L"0.8b pre2"
 #define PRODUCT_NAME   L"PdfiumView"
 #define APP_NAME PRODUCT_NAME L" v" VERSION_STRING
 

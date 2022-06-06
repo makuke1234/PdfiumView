@@ -5,9 +5,12 @@
 int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int nCmdShow)
 {
 	DEBUGPRINT("wWinMain(%p, , , %d)\n", static_cast<void *>(hInst), nCmdShow);
+	
+	pdfv::MainWindow mwnd;
 
 	int argc;
 	auto argv{ pdfv::getArgs(argc) };
+	
 
 	DEBUGPRINT("argc: %d, argv: %p", argc, static_cast<void *>(argv.get()));
 
@@ -23,17 +26,17 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int nCmdShow)
 		return pdfv::error::success;
 	}
 
-	if (!pdfv::window.init(hInst, argc, argv.get())) [[unlikely]]
+	if (!mwnd.init(hInst, argc, argv.get())) [[unlikely]]
 	{
-		pdfv::error::report();
+		pdfv::error::report(mwnd);
 		return pdfv::error::error;
 	}
 
-	if (!pdfv::window.run(fname, nCmdShow)) [[unlikely]]
+	if (!mwnd.run(fname, nCmdShow)) [[unlikely]]
 	{
-		pdfv::error::report();
+		pdfv::error::report(mwnd);
 		return pdfv::error::error;
 	}	
 
-	return pdfv::window.msgLoop();
+	return mwnd.msgLoop();
 }

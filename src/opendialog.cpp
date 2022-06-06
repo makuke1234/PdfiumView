@@ -5,7 +5,7 @@
 pdfv::OpenDialog::OpenDialog(std::size_t bufsize)
 	: m_lastName(new wchar_t[bufsize]), m_bufSize(bufsize)
 {
-	DEBUGPRINT("pdfv::OpenDialog::OpenDialog(%zu)\n", bufsize);
+	DEBUGPRINT("pdfv::OpenDialog::OpenDialog(%p, %zu) -> %p\n", this, this->m_bufSize, this->m_lastName.get());
 	// Good practise
 	this->m_lastName.get()[0] = L'\0';
 	this->m_lastName.get()[bufsize - 1] = L'\0';
@@ -74,10 +74,14 @@ pdfv::OpenDialog & pdfv::OpenDialog::operator=(OpenDialog && other) noexcept
 
 	return *this;
 }
+pdfv::OpenDialog::~OpenDialog() noexcept
+{
+	DEBUGPRINT("pdfv::OpenDialog::~OpenDialog()");
+}
 
 [[nodiscard]] bool pdfv::OpenDialog::open(HWND hwnd, std::wstring & output)
 {
-	DEBUGPRINT("pdfv::OpenDialog::open(%p, %p)\n", static_cast<void *>(hwnd), static_cast<const void *>(output.c_str()));
+	DEBUGPRINT("pdfv::OpenDialog::open(%p, %p, %p)\n", this, static_cast<void *>(hwnd), static_cast<const void *>(output.c_str()));
 	output.assign(this->m_lastName.get());
 	auto lastnameLen{ output.length() };
 	output.resize(this->m_bufSize);

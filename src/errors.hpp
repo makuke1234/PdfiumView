@@ -3,6 +3,8 @@
 
 namespace pdfv
 {
+	class MainWindow;
+
 	namespace error
 	{
 		enum Errorcode : int
@@ -43,8 +45,9 @@ namespace pdfv
 		 * @brief Displays error messages, messagebox owner is the main window
 		 * 
 		 * @param errid Error message id
+		 * @param win Window const-reference
 		 */
-		void report(Errorcode errid) noexcept;
+		void report(Errorcode errid, const MainWindow & win) noexcept;
 
 		extern Errorcode lastErr;
 
@@ -52,8 +55,9 @@ namespace pdfv
 		 * @brief Displays error messages based on last error id
 		 * Messagebox owner is the main window
 		 * 
+		 * @param win Window const-reference
 		 */
-		void report() noexcept;
+		void report(const MainWindow & win) noexcept;
 
 		/**
 		 * @brief Displays error messages based on last error id

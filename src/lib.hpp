@@ -7,6 +7,8 @@
 
 namespace pdfv
 {
+	class MainWindow;
+
 	class Pdfium
 	{
 	private:
@@ -48,39 +50,55 @@ namespace pdfv
 		/**
 		 * @brief Loads PDF file from path given as UTF-8 string, loads given page, first page by default
 		 * 
+		 * @param window Const-reference to window object
 		 * @param path UTF-8 string path
 		 * @param page Page to load
 		 * @return error::Errorcode
 		 */
-		error::Errorcode pdfLoad(std::string_view path, std::size_t page = 1);
+		error::Errorcode pdfLoad(
+			const MainWindow & window,
+			std::string_view path, std::size_t page = 1
+		);
 		/**
 		 * @brief Loads PDF file from path given as UTF-16 string, loads given page, first page by default
 		 * 
+		 * @param window Const-reference to window object
 		 * @param path UTF-16 string path
 		 * @param page Page to load
 		 * @return error::Errorcode 
 		 */
-		error::Errorcode pdfLoad(const std::wstring & path, std::size_t page = 1);
+		error::Errorcode pdfLoad(
+			const MainWindow & window,
+			const std::wstring & path, std::size_t page = 1
+		);
 		/**
 		 * @brief Loads a PDF file from binary data, given as byte array, preserves the array,
 		 * loads given page, first page by default
 		 * 
+		 * @param window Const-reference to window object
 		 * @param data Pointer to an array of bytes containing the PDF
 		 * @param length Length of binary data
 		 * @param page Page to load
 		 * @return error::Errorcode 
 		 */
-		error::Errorcode pdfLoad(const u8 * data, std::size_t length, std::size_t page = 1);
+		error::Errorcode pdfLoad(
+			const MainWindow & window,
+			const u8 * data, std::size_t length, std::size_t page = 1
+		);
 		/**
 		 * @brief Loads a PDF file from binary data, given as byte array, consumes the array,
 		 * loads given page, first page by default
 		 * 
+		 * @param window Const-reference to window object
 		 * @param data Pointer to an array of bytes containing the PDF
 		 * @param length Lengths of binary data
 		 * @param page Page to load
 		 * @return error::Errorcode 
 		 */
-		error::Errorcode pdfLoad(u8 * && data, std::size_t length, std::size_t page = 1) noexcept;
+		error::Errorcode pdfLoad(
+			const MainWindow & window,
+			u8 * && data, std::size_t length, std::size_t page = 1
+		) noexcept;
 		/**
 		 * @brief Unloads (closes) currently loaded PDF if any is open,
 		 * also any pages that might be open

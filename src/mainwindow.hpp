@@ -22,8 +22,6 @@ namespace pdfv
 		};
 
 	private:
-		MainWindow() noexcept;
-
 		int m_argc{};
 		wchar_t ** m_argv{ nullptr };
 		HINSTANCE m_hInst{ nullptr };
@@ -71,11 +69,7 @@ namespace pdfv
 		void setStatusParts() const noexcept;
 
 	public:
-		//
-		//	A singleton instance of the class, supported by a private constructor
-		//
-		static MainWindow mwnd;
-
+		MainWindow() noexcept;
 		MainWindow(const MainWindow & other) = delete;
 		MainWindow(MainWindow && other) noexcept = delete;
 		MainWindow & operator=(const MainWindow & other) = delete;
@@ -137,6 +131,10 @@ namespace pdfv
 		{
 			return this->m_title;
 		}
+		[[nodiscard]] bool highlighted() const noexcept
+		{
+			return this->m_highlighted;
+		}
 		/**
 		 * @brief Set new window title
 		 * 
@@ -188,6 +186,7 @@ namespace pdfv
 		 * 
 		 */
 		static LRESULT CALLBACK windowProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp) noexcept;
+		LRESULT intWindowProc(HWND hwnd, UINT uMsg, WPARAM wp, LPARAM lp) noexcept;
 		
 		LRESULT wOnDrawItem(LPARAM lp) noexcept;
 		void wOnCommand(WPARAM wp) noexcept;
@@ -218,6 +217,4 @@ namespace pdfv
 		 */
 		void openPdfFile(std::wstring_view file) noexcept;
 	};
-
-	constexpr inline auto & window{ MainWindow::mwnd };
 }

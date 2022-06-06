@@ -211,8 +211,12 @@ void pdfv::Tabs::updateZoom() const noexcept
 	}
 }
 
-pdfv::Tabs::Tabs(HWND hwnd, HINSTANCE hInst, RECT size) noexcept
-	: m_parent(hwnd), m_pos(size.left, size.top), m_size(size)
+pdfv::Tabs::Tabs(const MainWindow & wnd) noexcept
+	: window{ wnd }
+{
+}
+pdfv::Tabs::Tabs(const MainWindow & wnd, HWND hwnd, HINSTANCE hInst, RECT size) noexcept
+	: window{ wnd }, m_parent(hwnd), m_pos(size.left, size.top), m_size(size)
 {
 	DEBUGPRINT("pdfv::Tabs::Tabs(%p, %p)\n", static_cast<void *>(hwnd), static_cast<void *>(hInst));
 	
@@ -231,7 +235,7 @@ pdfv::Tabs::Tabs(HWND hwnd, HINSTANCE hInst, RECT size) noexcept
 
 	::SetWindowSubclass(
 		this->m_tabshwnd,
-		[](HWND hwnd, UINT umsg, WPARAM wp, LPARAM lp, UINT_PTR, DWORD_PTR) -> LRESULT CALLBACK
+		[](HWND hwnd, UINT umsg, WPARAM wp, LPARAM lp, UINT_PTR, DWORD_PTR dwTabs) -> LRESULT CALLBACK
 		{
 			if (umsg == WM_MOUSEMOVE || umsg == MainWindow::WM_TABMOUSEMOVE)
 			{
@@ -242,7 +246,8 @@ pdfv::Tabs::Tabs(HWND hwnd, HINSTANCE hInst, RECT size) noexcept
 			{
 				::SendMessageW(::GetParent(hwnd), umsg, wp, lp);
 				// Block making the tab active if the tab close button is being pressed
-				if (window.m_highlighted)
+				auto tabs = reinterpret_cast<const Tabs *>(dwTabs);
+				if ((tabs != nullptr) && tabs->window.highlighted())
 				{
 					return TRUE;
 				}
@@ -255,7 +260,7 @@ pdfv::Tabs::Tabs(HWND hwnd, HINSTANCE hInst, RECT size) noexcept
 			return ::DefSubclassProc(hwnd, umsg, wp, lp);
 		},
 		1,
-		0
+		reinterpret_cast<DWORD_PTR>(this)
 	);
 
 	this->m_canvashwnd = ::CreateWindowExW(
@@ -295,11 +300,11 @@ LRESULT CALLBACK pdfv::Tabs::tabsCanvasProcHub(HWND hwnd, UINT uMsg, WPARAM wp, 
 		auto cs{ reinterpret_cast<CREATESTRUCTW *>(lp) };
 		self = static_cast<Tabs *>(cs->lpCreateParams);
 		self->m_canvashwnd = hwnd;
-		::SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(self));
+		w::setPtr(hwnd, self);
 	}
 	else [[likely]]
 	{
-		self = reinterpret_cast<Tabs *>(::GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+		self = w::getPtr<Tabs *>(hwnd);
 	}
 
 	if (self != nullptr) [[likely]]

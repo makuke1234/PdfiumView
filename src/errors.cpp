@@ -37,9 +37,9 @@ void pdfv::error::report(pdfv::error::Errorcode errid, HWND hwnd) noexcept
 	}
 	::MessageBoxW(hwnd, errMsgs[errid], temp, MB_ICONERROR | MB_OK);
 }
-void pdfv::error::report(pdfv::error::Errorcode errid) noexcept
+void pdfv::error::report(pdfv::error::Errorcode errid, const MainWindow & win) noexcept
 {
-	pdfv::error::report(errid, pdfv::window.getHandle());
+	pdfv::error::report(errid, win.getHandle());
 }
 
 pdfv::error::Errorcode pdfv::error::lastErr = pdfv::error::Errorcode::success;
@@ -49,7 +49,7 @@ void pdfv::error::report(HWND hwnd) noexcept
 	report(lastErr, hwnd);
 }
 
-void pdfv::error::report() noexcept
+void pdfv::error::report(const MainWindow & win) noexcept
 {
-	report(lastErr);
+	report(lastErr, win);
 }

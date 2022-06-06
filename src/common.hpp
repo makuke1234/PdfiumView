@@ -41,6 +41,9 @@
 
 namespace pdfv
 {
+	// Forward-declare MainWindow class
+	class MainWindow;
+
 	// Some type aliases
 	using ssize_t = std::intptr_t;
 	using uchar   = unsigned char;
@@ -50,9 +53,9 @@ namespace pdfv
 	using ul      = unsigned long;
 	using ll      = long long;
 	using ull     = unsigned long long;
-	using f       = float;
-	using d       = double;
-	using ld      = long double;
+	using f32     = float;
+	using f64     = double;
+	using f128    = long double;
 
 	using i8  = std::int8_t;
 	using u8  = std::uint8_t;
@@ -154,6 +157,23 @@ namespace pdfv
 		 * @return POINT On success cursor position, default position on failure
 		 */
 		[[nodiscard]] POINT getCur(HWND hwnd, POINT def = {}) noexcept;
+
+		/**
+		 * @brief Get the strored pointer information from handle
+		 * 
+		 * @param hwnd Window handle
+		 * @return PtrT Retreived pointer with desired type
+		 */
+		template<concepts::pointer PtrT>
+		[[nodiscard]] PtrT getPtr(HWND hwnd) noexcept
+		{
+			return reinterpret_cast<PtrT>(::GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+		}
+		template<concepts::pointer PtrT>
+		void setPtr(HWND hwnd, PtrT ptr) noexcept
+		{
+			::SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(ptr));
+		}
 
 		/**
 		 * @brief Redraws window
@@ -667,7 +687,7 @@ namespace pdfv
 		return r;
 	}
 	
-	extern xy<f> dpi;
+	extern xy<f32> dpi;
 	
 	/**
 	 * @brief Calculates correct screen coordinate using DI pixel and DPI, performs rounding
@@ -676,9 +696,9 @@ namespace pdfv
 	 * @param dpi DPI scaling factor
 	 * @return int Screen coordinate
 	 */
-	[[nodiscard]] constexpr int dip(const int size, const f dpi) noexcept
+	[[nodiscard]] constexpr int dip(const int size, const f32 dpi) noexcept
 	{
-		return int(f(size) * dpi + 0.5f);
+		return int(f32(size) * dpi + 0.5f);
 	}
 	/**
 	 * @brief Calculates correct screen coordinate pair using DI pixel pair and DPI pair, performs rounding
@@ -687,9 +707,9 @@ namespace pdfv
 	 * @param dpi DPI scaling factor pair
 	 * @return int Screen coordinate pair
 	 */
-	[[nodiscard]] constexpr xy<int> dip(const xy<int> size, const xy<f> dpi) noexcept
+	[[nodiscard]] constexpr xy<int> dip(const xy<int> size, const xy<f32> dpi) noexcept
 	{
-		return xy<int>(xy<f>(size) * dpi + 0.5f);
+		return xy<int>(xy<f32>(size) * dpi + 0.5f);
 	}
 
 	/**
@@ -699,9 +719,9 @@ namespace pdfv
 	 * @param dpi DPI scaling factor
 	 * @return int Screen coordinate 
 	 */
-	[[nodiscard]] constexpr int dipfont(const int size, const f dpi) noexcept
+	[[nodiscard]] constexpr int dipfont(const int size, const f32 dpi) noexcept
 	{
-		return -int(f(size) * dpi * 96.0f / 72.0f + 0.5f);
+		return -int(f32(size) * dpi * 96.0f / 72.0f + 0.5f);
 	}
 
 	/**
@@ -715,11 +735,15 @@ namespace pdfv
 	/**
 	 * @brief Asks user info with a given message and window title in a dialog-like window
 	 * 
+	 * @param window Constant reference to main window object
 	 * @param message Message to user
 	 * @param title Window title
 	 * @return std::wstring Information string the user entered
 	 */
-	[[nodiscard]] std::wstring askInfo(std::wstring_view message, std::wstring_view title) noexcept;
+	[[nodiscard]] std::wstring askInfo(
+		const pdfv::MainWindow & window,
+		std::wstring_view message, std::wstring_view title
+	) noexcept;
 
 	namespace utf
 	{

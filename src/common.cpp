@@ -89,6 +89,7 @@ bool pdfv::w::moveWin(HWND hwnd, RECT rect, bool redraw) noexcept
 	}
 }
 
+
 bool pdfv::w::redraw(HWND hwnd, bool erase) noexcept
 {
 	return ::InvalidateRect(hwnd, nullptr, erase ? TRUE : FALSE) ? true : false; 
@@ -230,7 +231,7 @@ namespace pdfv
 			switch (wp)
 			{
 			case IDOK:
-				if (textdata != nullptr && textbox != nullptr) [[likely]]
+				if ((textdata != nullptr) && (textbox != nullptr)) [[likely]]
 				{
 					::GetWindowTextW(textbox, textdata, 2048);
 				}
@@ -299,7 +300,11 @@ namespace pdfv
 				nullptr,
 				nullptr
 			);
-			auto hfont{ window.getDefFont() };
+			// Sorry, no protection here :/
+			auto pair = static_cast<std::pair<const MainWindow &, wchar_t *> *>(
+				reinterpret_cast<CREATESTRUCTW *>(lp)->lpCreateParams
+			);
+			auto hfont{ pair->first.getDefFont() };
 			w::setFont(button1,    hfont, true);
 			w::setFont(button2,    hfont, true);
 			w::setFont(messagebox, hfont, true);
@@ -313,7 +318,7 @@ namespace pdfv
 			auto s2{ make_xy(w::getWinR(hwnd)) };
 			w::resize(hwnd, 2 * s2.x - s1.x, 2 * s2.y - s1.y, true);
 
-			textdata = static_cast<wchar_t *>(reinterpret_cast<CREATESTRUCTW *>(lp)->lpCreateParams);
+			textdata = pair->second;
 			break;
 		}
 		case pdfv::WM_MESSAGE:
@@ -327,7 +332,10 @@ namespace pdfv
 	}
 }
 
-[[nodiscard]] std::wstring pdfv::askInfo(std::wstring_view message, std::wstring_view title) noexcept
+[[nodiscard]] std::wstring pdfv::askInfo(
+	const pdfv::MainWindow & window,
+	std::wstring_view message, std::wstring_view title
+) noexcept
 {
 	DEBUGPRINT("pdfv::askInfo(%p, %p)\n", static_cast<const void *>(message.data()), static_cast<const void *>(title.data()));
 
@@ -344,6 +352,8 @@ namespace pdfv
 	AskProc_finished = false;
 
 	wchar_t temp[2048]{};
+	std::pair<const MainWindow &, wchar_t *> tPair{ window, temp };
+
 	auto hwnd = ::CreateWindowExW(
 		0,
 		wc.lpszClassName,
@@ -356,7 +366,7 @@ namespace pdfv
 		window.getHandle(),
 		nullptr,
 		nullptr,
-		reinterpret_cast<LPVOID>(temp)
+		static_cast<LPVOID>(&tPair)
 	);
 	if (hwnd == nullptr) [[unlikely]]
 	{

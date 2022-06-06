@@ -53,6 +53,7 @@ namespace pdfv
 		static inline const std::wstring defaulttitlepadded{ defaulttitle + padding };
 
 	private:
+		const MainWindow & window;
 		HWND m_parent{ nullptr }, m_tabshwnd{ nullptr }, m_canvashwnd{ nullptr };
 		xy<int> m_pos;
 		xy<int> m_size;
@@ -86,14 +87,16 @@ namespace pdfv
 		void updateZoom() const noexcept;
 
 	public:
-		Tabs() noexcept = default;
+		Tabs(const MainWindow & wnd) noexcept;
 		/**
 		 * @brief Initialises a tab by using parent's window handle and module handle
 		 * 
+		 * @param wnd Window class const-ref
 		 * @param hwnd Parent's window handle
 		 * @param hInst Module instance handle
+		 * @param size Size rectangle
 		 */
-		Tabs(HWND hwnd, HINSTANCE hInst, RECT size) noexcept;
+		Tabs(const MainWindow & wnd, HWND hwnd, HINSTANCE hInst, RECT size) noexcept;
 		Tabs(const Tabs & other) = delete;
 		Tabs(Tabs && other) noexcept = delete;
 		Tabs & operator=(const Tabs & other) = delete;

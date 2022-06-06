@@ -86,15 +86,21 @@ void pdfv::Pdfium::free() noexcept
 	s_errorHappened = false;
 	return error::Errorcode(FPDF_GetLastError() + error::pdf_success);
 }
-pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(std::string_view path, std::size_t page)
+pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(
+	const MainWindow & window,
+	std::string_view path, std::size_t page
+)
 {
 	DEBUGPRINT("pdfv::Pdfium::pdfLoad(%p, %zu)\n", static_cast<const void *>(path.data()), page);
 	assert(s_libInit == true);
 	this->pdfUnload();
 
-	return this->pdfLoad(utf::conv(path), page);
+	return this->pdfLoad(window, utf::conv(path), page);
 }
-pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(const std::wstring & path, std::size_t page)
+pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(
+	const MainWindow & window,
+	const std::wstring & path, std::size_t page
+)
 {
 	DEBUGPRINT("pdfv::Pdfium::pdfLoad(%p, %zu)\n", static_cast<const void *>(path.c_str()), page);
 	assert(s_libInit == true);
@@ -121,14 +127,17 @@ pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(const std::wstring & path, std::siz
 	if (::ReadFile(file, buf, size, &read, nullptr))
 	{
 		::CloseHandle(file);
-		return this->pdfLoad(std::move(buf), std::size_t(read), page);
+		return this->pdfLoad(window, std::move(buf), std::size_t(read), page);
 	}
 
 	::CloseHandle(file);
 
 	return error::pdf_file;
 }
-pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(const u8 * data, std::size_t length, std::size_t page)
+pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(
+	const MainWindow & window,
+	const u8 * data, std::size_t length, std::size_t page
+)
 {
 	DEBUGPRINT("pdfv::Pdfium::pdfLoad(%p, %zu, %zu)\n", static_cast<const void *>(data), length, page);
 	assert(s_libInit == true);
@@ -137,9 +146,12 @@ pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(const u8 * data, std::size_t length
 	auto buf{ new u8[length] };
 	std::copy(data, data + length, buf);
 	
-	return this->pdfLoad(std::move(buf), length, page);
+	return this->pdfLoad(window, std::move(buf), length, page);
 }
-pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(u8 * && data, std::size_t length, std::size_t page) noexcept
+pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(
+	const MainWindow & window,
+	u8 * && data, std::size_t length, std::size_t page
+) noexcept
 {
 	DEBUGPRINT("pdfv::Pdfium::pdfLoad(&& %p, %zu, %zu)\n", static_cast<void *>(data), length, page);
 	assert(s_libInit == true);
@@ -153,7 +165,7 @@ pdfv::error::Errorcode pdfv::Pdfium::pdfLoad(u8 * && data, std::size_t length, s
 		s_errorHappened = true;
 		if (auto err{ this->getLastError() }; err == error::pdf_password)
 		{
-			auto ans{ utf::conv(askInfo(L"Enter password:", window.getTitle())) };
+			auto ans{ utf::conv(askInfo(window, L"Enter password:", window.getTitle())) };
 			this->m_fdoc = FPDF_LoadMemDocument(this->m_buf.get(), length, ans.c_str());
 			if (this->m_fdoc == nullptr) [[unlikely]]
 			{
