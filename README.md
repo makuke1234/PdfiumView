@@ -39,6 +39,7 @@ The x86 (32-bit) Windows binaries can be downloaded [here](https://github.com/ma
 	* Fully get rid of flickering (as much as possible anyways)
 	* Reset zoom on page change
 	* Make zooming less aggressive (+- 10% at a time)
+	* Fix that annoying bug that when the current tab is closed and there are more tabs open after the closed one, the renderer would still render the closed page that is cached.
 
 * 0.7
 	* Fix bugs with command-line usage
